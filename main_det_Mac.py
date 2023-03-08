@@ -136,7 +136,6 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa):
     rst_wass_time = []
     rst_wass_obj = []
 
-    import heuristic
     [N,M] = np.shape(train_data)
     # obtain a empty model
     model_mosek = heuristic.obtain_mosek_model(M,N)
@@ -207,7 +206,6 @@ def RS(n,r_mu,train_data,test_data,p_bar,p_low,obj_val_saa):
     [N,M] = np.shape(train_data)
     ka = N
     sol = dro_models.det_release_time_scheduling_RS_given_ka(n,r_mu,M,train_data,p_bar,ka)
-    obj_val_saa - r_mu.sum()
     ka = 1
     sol = dro_models.det_release_time_scheduling_RS_given_ka(n,r_mu,M,train_data,p_bar,ka)
 
@@ -280,7 +278,7 @@ if __name__ == '__main__':
 
         Seed = 10 + ins
         np.random.seed(Seed)
-        n_all = [50]
+        n_all = [30]
         for n in n_all:
             mu_p = np.random.uniform(10*delta_mu,50,n)
             r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))

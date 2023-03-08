@@ -264,7 +264,7 @@ def variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,solution,model_mosek,models,
 
     it = 1
     i = 0
-    while i < 3:
+    while i < 1:
         if i == 0:
             neiborSolution = neighborhoodOne(solution)
         elif i == 1:
