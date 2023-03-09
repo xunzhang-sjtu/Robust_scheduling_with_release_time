@@ -23,7 +23,6 @@ import os
 project_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 import pickle
 import pathlib
-import dro_det_models 
 import heuristic
 import copy
 
