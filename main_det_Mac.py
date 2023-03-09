@@ -7,13 +7,11 @@ Created on Tue Oct 20 11:26:55 2020
 
 
 import math
-import mosek
 
 
 import numpy as np
 from scipy.stats import truncnorm
 import pandas as pd
-import time
 import dro_models
 import out_sample
 import det
@@ -21,10 +19,7 @@ import saa
 import multiprocessing as mp
 import os
 project_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-import pickle
-import pathlib
 import heuristic
-import copy
 
 
 
@@ -197,16 +192,33 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa):
     return sol
 
 
-def RS(n,r_mu,train_data,test_data,p_bar,p_low,obj_val_saa):
+def RS(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa):
+    obj_val_saa = sol_saa['obj']
     print('-------- Solve RS --------------------')   
     tau_set = np.arange(1,1.5,0.05)*(obj_val_saa - r_mu.sum())
     tau_set[0] = 1.000001*(obj_val_saa - r_mu.sum())
     
     [N,M] = np.shape(train_data)
-    ka = N
-    sol = dro_models.det_release_time_scheduling_RS_given_ka(n,r_mu,M,train_data,p_bar,ka)
-    ka = 1
-    sol = dro_models.det_release_time_scheduling_RS_given_ka(n,r_mu,M,train_data,p_bar,ka)
+    # obtain a empty model
+    model_mosek = heuristic.obtain_mosek_RS_model(M,N)
+    # models = [model_mosek.clone() for _ in range(N)]
+
+
+    x_matrix,x_dict = heuristic.decode(sol_saa['seq'])
+    xr_tem = x_matrix @ r_mu
+    xd_tem = x_matrix @ p_bar
+    xp_tem = x_matrix @ train_data
+
+    print('tau:',sol_saa['obj']-r_mu.sum())
+    for ka in range(N+2):
+        model_mosek.getParameter("xr").setValue(xr_tem)
+        model_mosek.getParameter("xd").setValue(xd_tem)
+        model_mosek.getParameter("xp").setValue(xp_tem)
+        model_mosek.getParameter("ka").setValue(ka)
+        model_mosek.solve()
+        primal_obj = model_mosek.primalObjValue()
+        print('RS obj:',primal_obj)
+
 
 
     rst_RS_list = {} 
@@ -241,7 +253,7 @@ def RS(n,r_mu,train_data,test_data,p_bar,p_low,obj_val_saa):
 
 
 def main_process(r_mu,mu_p,std_p,n,S_train,S_test):
-    for it in range(10):
+    for it in range(2):
         print('****************************** iteration:',it,'*************************************')
         # temp,p_bar,p_low = generate_LogNormal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
         temp,p_bar,p_low = generate_Normal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
@@ -255,8 +267,8 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test):
         sol_det = deter(n,r_mu,p_mu_esti,test_data)
         sol_saa = SAA(n,S_train,train_data,r_mu,test_data)
         # sol_mom = moments_DRO(n,p_mu_esti,r_mu,test_data,p_bar,p_low)
-        # sol_RS = RS(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa['obj'])
-        sol_wass = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa)
+        sol_RS = RS(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa)
+        # sol_wass = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa)
 
 
 
@@ -277,7 +289,7 @@ if __name__ == '__main__':
 
         Seed = 10 + ins
         np.random.seed(Seed)
-        n_all = [30]
+        n_all = [10]
         for n in n_all:
             mu_p = np.random.uniform(10*delta_mu,50,n)
             r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
