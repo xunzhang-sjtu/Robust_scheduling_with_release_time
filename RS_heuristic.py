@@ -40,7 +40,7 @@ def decode(solution):
     return x_matrix,x_dict
 
 
-def compute_neiborhood_obj(neiborSolution,N,r,c,M,p_hat,d_bar,model_mosek,models):
+def compute_neiborhood_obj(neiborSolution,N,r,M,p_hat,d_bar,model_mosek,models,ka):
     
     x_dict_set = {}
     # start_time = time.time()
@@ -61,11 +61,10 @@ def compute_neiborhood_obj(neiborSolution,N,r,c,M,p_hat,d_bar,model_mosek,models
         xd_tem = x_matrix @ d_bar
         xp_tem = x_matrix @ p_hat
 
-
         models[j].getParameter("xr").setValue(xr_tem)
         models[j].getParameter("xd").setValue(xd_tem)
         models[j].getParameter("xp").setValue(xp_tem)
-        models[j].getParameter("c").setValue(c)
+        models[j].getParameter("ka").setValue(ka)
 
 
         # We can set the number of threads individually per model
@@ -102,10 +101,8 @@ def compute_neiborhood_obj(neiborSolution,N,r,c,M,p_hat,d_bar,model_mosek,models
 
 
 
-def variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,solution,model_mosek,models,sol_saa):
+def variableNeighborhoodDescent(N,r,M,p_hat,d_bar,solution,model_mosek,models,sol_saa,ka):
     # obtain original objective
-    x_matrix,x_dict = decode(solution+1)
-
     x_matrix,x_dict = decode(sol_saa['seq'])
     solution = sol_saa['seq'] - 1
 
@@ -116,7 +113,7 @@ def variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,solution,model_mosek,models,
     model_mosek.getParameter("xr").setValue(xr_tem)
     model_mosek.getParameter("xd").setValue(xd_tem)
     model_mosek.getParameter("xp").setValue(xp_tem)
-    model_mosek.getParameter("c").setValue(c)
+    model_mosek.getParameter("ka").setValue(ka)
 
     model_mosek.solve()
     primal_obj = model_mosek.primalObjValue()
@@ -137,7 +134,7 @@ def variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,solution,model_mosek,models,
         elif i == 2:
             neiborSolution = neighborhoodThree(solution)
 
-        obj_set, x_dict_set = compute_neiborhood_obj(neiborSolution,N,r,c,M,p_hat,d_bar,model_mosek,models)
+        obj_set, x_dict_set = compute_neiborhood_obj(neiborSolution,N,r,M,p_hat,d_bar,model_mosek,models,ka)
         it = it + 1
         # obtain the index of minimum objective value
         index_min = np.argmin(obj_set)
@@ -194,9 +191,7 @@ def neighborhoodThree(sol):  # two_h_opt_swap算子
     return neighbor
 
 
-def vns(N,r,c,M,p_hat,d_bar,model_mosek,models,sol_saa):
-
-
+def vns(N,r,M,p_hat,d_bar,model_mosek,models,sol_saa,ka):
 
     # generate a initial solution
     currentSolution = np.arange(0,N)
@@ -213,8 +208,7 @@ def vns(N,r,c,M,p_hat,d_bar,model_mosek,models,sol_saa):
         L1 = 1
         for k in range(L1):
             seq_0 = shaking_neibors[k]
-            sol = variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,seq_0,model_mosek,models,sol_saa)
-            # sol = parallel_compute_ka(N,r,c,M,p_hat,d_bar,seq_0)
+            sol = variableNeighborhoodDescent(N,r,M,p_hat,d_bar,seq_0,model_mosek,models,sol_saa,ka)
             des_opt_obj = sol['obj']
             des_Solution = sol['sol']
 
@@ -234,7 +228,6 @@ def vns(N,r,c,M,p_hat,d_bar,model_mosek,models,sol_saa):
     end_time = time.time()
     time_gap = end_time - start_time
     sol = {}
-    sol['c'] = c
     sol['time'] = time_gap
     sol['x_seq'] = opt_x
     sol['obj'] = opt_obj
