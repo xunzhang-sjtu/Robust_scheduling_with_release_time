@@ -104,7 +104,7 @@ def compute_neiborhood_obj(neiborSolution,N,r,c,M,p_hat,d_bar,model_mosek,models
 
 def variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,solution,model_mosek,models,sol_saa):
     # obtain original objective
-    x_matrix,x_dict = decode(solution+1)
+    # x_matrix,x_dict = decode(solution+1)
 
     x_matrix,x_dict = decode(sol_saa['seq'])
     solution = sol_saa['seq'] - 1

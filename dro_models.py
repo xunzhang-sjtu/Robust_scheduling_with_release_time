@@ -20,6 +20,8 @@ from rsome import E
 import sche_vns_det_release as sv
 import time
 
+time_limits = 3600
+
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
     # mu = np.round(mu,1)
     # sigma = np.round(sigma,1)
@@ -62,7 +64,7 @@ def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.01)
-    model.setParam('TimeLimit',3600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("dro_e.LP")
@@ -72,7 +74,7 @@ def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
     end_time = time.time()
     cpu_time = end_time - start_time
 
-    if model.status == 2 or model.status == 13:
+    if model.status == 2 or model.status == 13 or model.status == 9:
         obj_val = model.getObjective().getValue()
         x_tem = np.zeros((N,N))
         for i in range(N):
@@ -87,7 +89,7 @@ def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
 
 
 
-def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low):
+def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
 
 
     model = gp.Model('wass')
@@ -142,13 +144,16 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low):
             model.addConstr(y[i,j] <= M_val * x[i,j])
             model.addConstr(y[i,j] >= ka- M_val * (1-x[i,j]))
 
+            # x[i,j].start = x_saa[i,j]
+
+
     for i in range(N):
         model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.01)
-    # model.setParam('TimeLimit',60)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -156,8 +161,9 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low):
     model.optimize()    
     end_time = time.time()
     cpu_time = end_time - start_time
-    # if model.status == 2 or model.status == 13:
-    if True:
+    # print('wass dro run time=',cpu_time)
+    if model.status == 2 or model.status == 13 or model.status == 9:
+    # if True:
         obj_val = model.getObjective().getValue()
         x_tem = np.zeros((N,N))
         for i in range(N):
@@ -179,41 +185,6 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low):
     sol['time'] = cpu_time
     sol['x_seq'] = x_seq
     sol['obj'] = obj_val
-
-
-    # # # test heuristic
-    # theta_value = np.zeros(M)
-    # ka_value = ka.x
-    # v_true = {}
-    # v_heur = {}
-    # v_sum_1 = 0
-    # v_sum_2 = 0
-    # for m in range(M):
-    #     v_tem = np.zeros((N,N+1))
-    #     v_tem_h = np.zeros((N,N+1))
-    #     for i in range(N):
-    #         for j in range(i,N+1):
-    #             v_tem[i,j] = v[m][i,j].x
-
-    #             if i == 0:
-    #                 v_m_ij_1 = -(j-i)*x_tem[0,:] @ r + x_tem[N-1,:] @ p_hat[:,m]
-    #                 v_m_ij_2 = -(j-i)*x_tem[0,:] @ r + x_tem[N-1,:] @ d_bar - ka_value * (x_tem[N-1,:] @ (d_bar - p_hat[:,m]))
-    #                 v_m_ij = max(v_m_ij_1,v_m_ij_2)
-    #                 v_tem_h[i,j] = v_m_ij
-    #             else:
-    #                 v_m_ij_1 = -(j-i)*(x_tem[i,:] @ r - (x_tem[i-1,:] @ r) ) + (j-i+1)*x_tem[i-1,:] @ p_hat[:,m]
-    #                 v_m_ij_2 = -(j-i)*(x_tem[i,:] @ r - (x_tem[i-1,:] @ r) ) + (j-i+1)*x_tem[i-1,:] @ d_bar - ka_value * x_tem[i-1,:] @ d_bar + ka_value * x_tem[i-1,:] @ p_hat[:,m]
-    #                 v_m_ij = max(v_m_ij_1,v_m_ij_2) 
-    #                 v_tem_h[i,j] = v_m_ij    
-    #     v_true[m] = v_tem       
-    #     v_heur[m] = v_tem_h
-    #     v_sum_1 += v_tem.sum()
-    #     v_sum_2 += v_tem_h.sum()
-    #     theta_value[m] = sum(v_tem_h[:,N]) + N*(x_tem[0,:] @ r)
-
-    # obj_h = c*ka_value + (1/M)*sum(theta_value)
-
-
 
     return sol
 
@@ -281,7 +252,7 @@ def det_release_time_scheduling_wass_given_ka(N,r,c,M,p_hat,d_bar,ka):
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.01)
-    # model.setParam('TimeLimit',60)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -289,8 +260,8 @@ def det_release_time_scheduling_wass_given_ka(N,r,c,M,p_hat,d_bar,ka):
     model.optimize()    
     end_time = time.time()
     cpu_time = end_time - start_time
-    # if model.status == 2 or model.status == 13:
-    if True:
+    if model.status == 2 or model.status == 13 or model.status == 9:
+    # if True:
         obj_val = model.getObjective().getValue()
         x_tem = np.zeros((N,N))
         for i in range(N):
@@ -308,9 +279,6 @@ def det_release_time_scheduling_wass_given_ka(N,r,c,M,p_hat,d_bar,ka):
     sol['time'] = cpu_time
     sol['x_seq'] = x_seq
     sol['obj'] = obj_val
-
-    import heuristic
-    obj = heuristic.obtain_mosek_model(c,M,N,ka,x_tem,r,d_bar,p_hat)
 
     return sol
 
@@ -373,7 +341,7 @@ def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar,d_low):
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',3600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -458,7 +426,7 @@ def det_release_time_scheduling_RS_given_ka(N,r,M,p_hat,d_bar,ka):
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',3600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -561,7 +529,7 @@ def rand_release_time_scheduling_wass(N,c,M,r_hat,p_hat,d_bar,r_low,r_bar):
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -669,7 +637,7 @@ def rand_release_time_scheduling_RS(N,tau,M,r_hat,p_hat,d_bar,r_low,r_bar):
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -795,7 +763,7 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',3600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -925,7 +893,7 @@ def rand_release_time_scheduling_wass_affin_scenario(N,c,M,r_hat,p_hat,p_low,p_b
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',3600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")
@@ -1049,7 +1017,7 @@ def rand_release_time_scheduling_RS_affine(N,tau,M,r_hat,p_hat,p_low,p_bar,r_low
 
     model.setParam('OutputFlag', 0)
     # model.setParam('MIPGap',0.05)
-    model.setParam('TimeLimit',3600)
+    model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
     # model.write("E:\\onedrive\\dro.LP")

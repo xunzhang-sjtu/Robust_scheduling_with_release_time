@@ -125,17 +125,13 @@ def moments_DRO(n,p_mu_esti,r_mu,test_data,p_bar,p_low,it,full_path):
         pickle.dump(sol,tf)
     return sol
 
-def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,it,full_path):
+def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO):
     # ******** wassertein dro **************
     max_c = sum(p_bar - p_low)
-    c_set = np.arange(0,1,0.1)*max_c
+    c_set = range_c*max_c
     c_set[0] = 0.000001
-
+    x_saa,x_dict_saa = heuristic.decode(sol_saa['seq'])
     print('-------- Solve Wass DRO --------------------')        
-    [N,M] = np.shape(train_data)
-    # # obtain a empty model
-    model_DRO = mosek_models.obtain_mosek_model(M,N)
-    models_DRO = [model_DRO.clone() for _ in range(N)]
     # solve dro model
     def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_model):
         rst_wass_list = {} 
@@ -144,7 +140,7 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,it,full
         for i in range(len(c_set)):
             if exact_model:
                 # ===== exact model ======
-                sol = dro_models.det_release_time_scheduling_wass(n,r_mu,c_set[i],S_train,train_data,p_bar,p_low)
+                sol = dro_models.det_release_time_scheduling_wass(n,r_mu,c_set[i],S_train,train_data,p_bar,p_low,x_saa)
             else: 
                 # ====== heuristic solving =======
                 sol = heuristic.vns(n,r_mu,c_set[i],S_train,train_data,p_bar,model_DRO,models_DRO,sol_saa)
@@ -176,13 +172,16 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,it,full
     sol['out_obj_mean'] = tft_mean
     sol['out_obj_95_pt'] = tft_quan
 
-    print('---------------------------------------------------')
+    if exact_model:
+        print('Exact ---------------------------------------------------')
+    else:
+        print('VNS ---------------------------------------------------')
     print('Wass time = ',sol['time'])
     print('mean=',np.round(tft_wass.mean(axis = 0).to_list(),2))
     print('quantile=',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
 
     if exact_model:
-        with open(full_path+'sol_wass_exact.pkl' + '.pkl', "wb") as tf:
+        with open(full_path+'sol_wass_exact.pkl', "wb") as tf:
             pickle.dump(sol,tf)
     else:
         with open(full_path+'sol_wass_vns.pkl', "wb") as tf:
@@ -250,13 +249,13 @@ def RS(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa):
     return sol
 
 
-def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations):
+def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins):
     for it in range(iterations):
-        print('****************************** iteration:',it,'*************************************')
+        # print('****************************** iteration:',it,'*************************************')
 
-        full_path = project_path + 'n='+str(n)+'/' + 'iteration='+str(it)+'/'
-        if os.path.exists(full_path+'data_info.pkl'):
-        # if False:
+        full_path = project_path + 'ins='+str(ins)+'/' + 'n='+str(n)+'/' + 'iteration='+str(it)+'/'
+        # if os.path.exists(full_path+'data_info.pkl'):
+        if False:
             with open(full_path+'data_info.pkl', "rb") as tf:
                 data_info = pickle.load(tf)
             temp = data_info['data']
@@ -280,54 +279,54 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations):
 
 
         p_mu_esti = np.mean(train_data,axis = 1)
-        p_std_esti = np.std(train_data,axis = 1)
+        # p_std_esti = np.std(train_data,axis = 1)
         # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
 
         sol_det = deter(n,r_mu,p_mu_esti,test_data,it,full_path)
         sol_saa = SAA(n,S_train,train_data,r_mu,test_data,it,full_path)
-        sol_mom = moments_DRO(n,p_mu_esti,r_mu,test_data,p_bar,p_low,it,full_path)
+        # sol_mom = moments_DRO(n,p_mu_esti,r_mu,test_data,p_bar,p_low,it,full_path)
         # # sol_RS = RS(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa)
-        if n <= 10:
-            exact_model = True
-            sol_wass_exact = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,it,full_path)
-            exact_model = False
-            sol_wass_vns = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,it,full_path)
-        else:
-            exact_model = False
-            sol_wass_vns = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,it,full_path)
+        exact_model = False
+        sol_wass_VNS = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
 
+        if n <= 5:
+            exact_model = True
+            sol_wass_exact = wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
 
 
 project_path = '/Users/zhangxun/data/robust_scheduling/det_release/uncertainty_set_size/'
 n = 10 # num of jobs
 delta_mu = 4 # control lb of mean processing time
-delta_r = 0.1# control ub of the release time
+delta_r = 0.1 # control ub of the release time
 delta_ep = 1.5 # control the upper bound of the mad
 S_train = 20
 S_test = 10000
-iterations = 10
-
+iterations = 1
+range_c = np.arange(0,1,0.1)
 if __name__ == '__main__':
 
-    for ins in range(1):
-
-        Seed = 10 + ins
-        np.random.seed(Seed)
-        n_all = [6,8,10,12,14,16,18,20,25,30,35,40,45,50]
+    for ins in range(20):
+        print('******** ins=',ins,'************************************************************')
+        # Seed = 10 + ins
+        # np.random.seed(Seed)
+        n_all = [30]
         for n in n_all:
             mu_p = np.random.uniform(10*delta_mu,50,n)
             r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
             mad_p = np.random.uniform(0,delta_ep*mu_p)
             std_p = np.sqrt(np.pi/2)*mad_p
 
+            # # obtain a empty model
+            model_DRO = mosek_models.obtain_mosek_model(S_train,n)
+            models_DRO = [model_DRO.clone() for _ in range(n)]
+
             para = {}
             para['mu_p'] = mu_p
             para['r_mu'] = r_mu
             para['mad_p'] = mad_p
 
-            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations)
-
-
+            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins)
+        
         # n_all = [10,15,20]
         # for n in n_all:
         #     mu_p = np.random.uniform(10*delta_mu,50,n)
