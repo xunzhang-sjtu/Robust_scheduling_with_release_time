@@ -18,7 +18,6 @@ from numpy import inf
 from rsome import dro
 from rsome import norm
 from rsome import E
-import sche_vns_det_release as sv
 
 
 def det_release_time_scheduling(N,mu,sigma,r,x_given):
@@ -138,8 +137,8 @@ def det_release_time_scheduling(N,mu,sigma,r,x_given):
 
 
 def det_release_time_scheduling_given_seq(N,mu,sigma,r,x_seq):
-
-    x,x_dict = sv.decode(x_seq,N)
+    import heuristic
+    x,x_dict = heuristic.decode(x_seq,N)
     mu = x @ mu
     sigma = x @ sigma
     r = x @ r

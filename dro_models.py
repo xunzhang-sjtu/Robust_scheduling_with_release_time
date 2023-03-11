@@ -17,7 +17,6 @@ from rsome import grb_solver as grb                     # import the Gurobi inte
 from numpy import inf
 from rsome import dro
 from rsome import E
-import sche_vns_det_release as sv
 import time
 
 time_limits = 3600

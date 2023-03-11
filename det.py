@@ -40,7 +40,7 @@ def det_seq(N,r,p):
     #m.write("IB.LP")
     
     
-    x_result = np.zeros((N,N));
+    x_result = np.zeros((N,N))
     for i in range(N):
         for j in range(N):
             x_result[i,j] = x[i,j].x
