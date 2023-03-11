@@ -7,7 +7,7 @@ import pickle
 
 def SAA(n,S_train,S_test,train_data,r_mu,test_data,full_path):
     # ************ saa model *********************
-    print('-------- Solve SAA --------------------')
+    # print('-------- Solve SAA --------------------')
     x_seq_saa,obj_val_saa,time_saa = saa.saa_seq_det_release(n,S_train,train_data,r_mu)
     tft_saa = out_sample.computeTotal_det_release(n,test_data,r_mu,S_test,x_seq_saa)
 

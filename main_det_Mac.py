@@ -23,7 +23,7 @@ import data_generation as dg
 
 def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins):
     for it in range(iterations):
-        # print('****************************** iteration:',it,'*************************************')
+        print('----------------------- ins:',ins,' n:',n,' iteration:',it,'-------------------------------------')
 
         full_path = project_path + 'ins='+str(ins)+'/' + 'n='+str(n)+'/' + 'iteration='+str(it)+'/'
         # if os.path.exists(full_path+'data_info.pkl'):
@@ -75,8 +75,7 @@ iterations = 1
 range_c = np.arange(0,1,0.1)
 if __name__ == '__main__':
 
-    for ins in range(1):
-        print('******** ins=',ins,'************************************************************')
+    for ins in range(2):
         # Seed = 10 + ins
         # np.random.seed(Seed)
         n_all = [8]

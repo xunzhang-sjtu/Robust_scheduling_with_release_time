@@ -35,7 +35,7 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
     max_c = sum(p_bar - p_low)
     c_set = range_c*max_c
     c_set[0] = 0.000001
-    print('-------- Solve Wass DRO --------------------')        
+    # print('-------- Solve Wass DRO --------------------')        
     # solve dro model
     S_train = len(train_data[0,:])
     S_test = len(test_data[0,:])
@@ -50,13 +50,13 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
 
     # print results
     if exact_model:
-        print('Exact ---------------------------------------------------')
+        print('Exact Wass time = ',np.round(sol['time'],2))
+        print('Exact mean =',np.round(tft_wass.mean(axis = 0).to_list(),2))
+        print('Exact quantile 95 =',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
     else:
-        print('VNS ---------------------------------------------------')
-
-    print('Wass time = ',np.round(sol['time'],2))
-    print('mean=',np.round(tft_wass.mean(axis = 0).to_list(),2))
-    print('quantile=',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
+        print('VNS Wass time = ',np.round(sol['time'],2))
+        print('VNS mean =',np.round(tft_wass.mean(axis = 0).to_list(),2))
+        print('VNS quantile 95 =',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
 
     # store results
     if exact_model:

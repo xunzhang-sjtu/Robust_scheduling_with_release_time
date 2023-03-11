@@ -7,7 +7,7 @@ import pickle
 
 def deter(n,S_test,r_mu,p_mu_esti,test_data,full_path):
     # ********** deterministic model ********************
-    print('-------- Solve Det --------------------')
+    # print('-------- Solve Det --------------------')
     x_seq_det,obj_det,time_det = det.det_seq(n,r_mu,p_mu_esti)
     tft_det = out_sample.computeTotal_det_release(n,test_data,r_mu,S_test,x_seq_det)
     sol = {}
