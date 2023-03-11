@@ -53,16 +53,14 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         p_mu_esti = np.mean(train_data,axis = 1)
         # p_std_esti = np.std(train_data,axis = 1)
         # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
-        sol_det = det.deter(n,S_test,r_mu,p_mu_esti,test_data,full_path)
+        # sol_det = det.deter(n,S_test,r_mu,p_mu_esti,test_data,full_path)
         sol_saa = saa.SAA(n,S_train,S_test,train_data,r_mu,test_data,full_path)
-        sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
+        # sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
     
         exact_model = False
         sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
-
-        if n <= 5:
-            exact_model = True
-            sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
+        exact_model = True
+        sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
 
 
 project_path = '/Users/zhangxun/data/robust_scheduling/det_release/uncertainty_set_size/'

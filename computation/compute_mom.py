@@ -12,12 +12,13 @@ def moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path):
     tft_mom = out_sample.computeTotal_det_release(n,test_data,r_mu,S_test,x_seq_mom)
 
     sol = {}
-    sol['obj'] = obj_val_mom
+    sol['obj'] = obj_val_mom + r_mu.sum()
     sol['seq'] = x_seq_mom
     sol['time'] = time_mom
     sol['out_obj'] = tft_mom
 
     print('MOM time = ',np.round(time_mom,2),\
+          ',obj =',np.round(np.mean(obj_val_mom),2),\
           ',mean =',np.round(np.mean(tft_mom),2),\
             ',quantile 95 =',np.round(np.quantile(tft_mom,0.95),2))
     

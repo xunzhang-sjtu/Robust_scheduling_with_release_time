@@ -51,10 +51,12 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
     # print results
     if exact_model:
         print('Exact Wass time = ',np.round(sol['time'],2))
+        print('Exact Wass obj = ',np.round(sol['obj'],2))
         print('Exact mean =',np.round(tft_wass.mean(axis = 0).to_list(),2))
         print('Exact quantile 95 =',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
     else:
         print('VNS Wass time = ',np.round(sol['time'],2))
+        print('VNS Wass obj = ',np.round(sol['obj'],2))
         print('VNS mean =',np.round(tft_wass.mean(axis = 0).to_list(),2))
         print('VNS quantile 95 =',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
 
