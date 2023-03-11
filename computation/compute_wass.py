@@ -23,6 +23,9 @@ def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_mo
         rst_wass_obj.append(sol['obj'] + r_mu.sum())
         rst_wass_time.append(sol['time'])
         rst_wass_list[c] = np.int32(np.round(sol['x_seq'])+1) 
+
+        # print('Wass time = ',np.round(sol['time'],2),\
+        # ',obj =',np.round(sol['obj'] + r_mu.sum(),2))
     sol = {}
     sol['obj'] = rst_wass_obj
     sol['seq'] = rst_wass_list
