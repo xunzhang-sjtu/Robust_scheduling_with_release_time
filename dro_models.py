@@ -18,7 +18,6 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-
 time_limits = 3600
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
