@@ -62,41 +62,6 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         #     sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
 
 
-<<<<<<< HEAD
-project_path = 'D:/DRO_scheduling/det_release/uncertainty_set_size/'
-delta_mu = 4 # control lb of mean processing time
-delta_r = 0.1 # control ub of the release time
-delta_ep = 1.5 # control the upper bound of the mad
-S_train = 20
-S_test = 10000
-iterations = 1
-range_c = np.arange(0,1,0.1)
-if __name__ == '__main__':
-
-    for ins in range(2):
-        # Seed = 10 + ins
-        # np.random.seed(Seed)
-        n_all = [30]
-        for n in n_all:
-=======
-
-def effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path):
-    # # obtain a empty model
-    model_DRO = mosek_models.obtain_mosek_model(S_train,n)
-    models_DRO = [model_DRO.clone() for _ in range(n)] 
-
-    for delta_ep in delta_ep_all:
-        file_path1 = file_path + 'delta_ep='+str(delta_ep) + '/'
-        for ins in range(instances):
-            # Seed = 10 + ins
-            # np.random.seed(Seed)
->>>>>>> 395ebb4cef2161ca2d4d79f90fb3873f49c9e9d2
-            mu_p = np.random.uniform(10*delta_mu,50,n)
-            r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
-            mad_p = np.random.uniform(0,delta_ep*mu_p)
-            std_p = np.sqrt(np.pi/2)*mad_p
-            print('----------------------- delta_ep:',delta_ep,'-------------------------------------')
-            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
 
 def effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path):
     # # obtain a empty model
