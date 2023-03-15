@@ -149,39 +149,3 @@ def saa_seq_det_release(N,k,p_hat,r):
     return schedule,obj,saa_cpu_time
 
 
-def saa_seq_det_release_without_x(N,k,p_hat,r):
-    m = gp.Model("saa")
-    
-    t = m.addVars(N,vtype = gp.GRB.CONTINUOUS, lb = -GRB.INFINITY, name='t')
-    # x = m.addVars(N, N, vtype = gp.GRB.BINARY,name='x')
-    
-    # xp = m.addVars(N, k, vtype = gp.GRB.CONTINUOUS,lb = -GRB.INFINITY,name='xp')
-    # te = m.addVars(N, vtype = gp.GRB.CONTINUOUS,lb = -GRB.INFINITY,name='te')
-    # xpe = m.addVars(N, vtype = gp.GRB.CONTINUOUS,lb = -GRB.INFINITY,name='xpe')
-    
-    obj = 0
-    for j in range(k):
-        for i in range(N):
-            obj = obj + (1/k)*(t[i] + p_hat[i,j])
-    m.setObjective(obj, GRB.MINIMIZE )
-    
-
-    for i in range(N):
-        m.addConstr(t[i] >= r[i] )
-            
-    for j in range(k):
-        for i in range(1,N):
-            m.addConstr(t[i] >= t[i-1] + p_hat[i-1,j])
-    
-
-    m.setParam('OutputFlag', 0)
-    # m.setParam('MIPGap',0.01)
-    # m.setParam('TimeLimit',600)
-    start = time.time()
-    m.optimize()
-    end = time.time()
-    saa_cpu_time = end - start
-
-    obj = m.getObjective().getValue()
-    
-    return obj

@@ -79,6 +79,187 @@ def obtain_mosek_model(M,N):
     return model
 
 
+# random release time model
+def obtain_mosek_random_model(M,N):
+
+    # with Model() as model:
+    model = Model()
+    # Create variable 'x' of length 4
+    theta = model.variable("theta",M, Domain.unbounded())
+    xi = model.variable("xi", [M,N], Domain.unbounded())
+    phi = model.variable("phi", [M,N], Domain.unbounded())
+    ka = model.variable("ka",1,Domain.greaterThan(0))
+
+
+    t0 = model.variable("t0", [N], Domain.unbounded())
+    t1 = model.variable("t1", [N,N], Domain.unbounded())
+    t2 = model.variable("t2", [N,N], Domain.unbounded())
+
+
+
+    x = model.parameter("x",[N,N])
+    p_bar = model.parameter("p_bar",N)
+    p_low = model.parameter("p_low",N)
+    p_hat = model.parameter("p_hat",[M,N])
+
+    r_bar = model.parameter("r_bar",N)
+    r_low = model.parameter("r_low",N)
+    r_hat = model.parameter("r_hat",[M,N])
+    # ka = model.parameter("ka")
+    c = model.parameter("c")
+
+    wr = {}
+    wp = {}
+    vr = {}
+    vp = {}
+    for m in range(M):
+        wr[m] = model.variable([N,N],Domain.unbounded())
+        wp[m] = model.variable([N,N],Domain.unbounded())
+        vr[m] = model.variable([N,N],Domain.unbounded())
+        vp[m] = model.variable([N,N],Domain.unbounded())
+        model.constraint(Expr.sub(theta.index(m),\
+                                  Expr.add(Expr.sum(t0),\
+                                   Expr.add(Expr.sum(xi.pick([[m,i] for i in range(N)])),\
+                                            Expr.sum(phi.pick([[m,i] for i in range(N)])) ))), \
+                                                Domain.greaterThan(0.0))
+        for j in range(N):
+            # --- processing time 
+            model.constraint(Expr.sub(xi.pick([[m,j]]), \
+                                      Expr.add(
+                                        Expr.sub(
+                                                Expr.mul(p_bar.index(j),Expr.sum(t1.pick([[i,j] for i in range(N)]))),\
+                                                Expr.sub(Expr.mul(ka,p_bar.index(j)),Expr.mul(ka,p_hat.index([m,j])))),\
+                                                    p_bar.index(j)
+                                                )),
+                             Domain.greaterThan(0))
+
+            model.constraint(Expr.sub(xi.pick([[m,j]]), \
+                                                Expr.add(
+                                                Expr.mul(p_hat.index([m,j]),Expr.sum(t1.pick([[i,j] for i in range(N)]))),\
+                                                    p_hat.index([m,j]))),
+                                        Domain.greaterThan(0))
+
+
+            model.constraint(Expr.sub(xi.pick([[m,j]]), \
+                                      Expr.add(
+                                        Expr.sub(
+                                                Expr.mul(p_low.index(j),Expr.sum(t1.pick([[i,j] for i in range(N)]))),\
+                                                Expr.sub(Expr.mul(ka,p_hat.index([m,j])),Expr.mul(ka,p_low.index(j)))),\
+                                                    p_low.index(j)
+                                                )),
+                             Domain.greaterThan(0))
+
+            # release time 
+            model.constraint(Expr.sub(phi.pick([[m,j]]), \
+                                        Expr.sub(
+                                                Expr.mul(r_bar.index(j),Expr.sum(t2.pick([[i,j] for i in range(N)]))),\
+                                                Expr.sub(Expr.mul(ka,r_bar.index(j)),Expr.mul(ka,r_hat.index([m,j])))),\
+                                                ),
+                             Domain.greaterThan(0))
+            
+            model.constraint(Expr.sub(phi.pick([[m,j]]), \
+                                        Expr.mul(r_hat.index([m,j]),Expr.sum(t2.pick([[i,j] for i in range(N)]))) ),
+                                        Domain.greaterThan(0))
+
+
+            model.constraint(Expr.sub(phi.pick([[m,j]]), \
+                                        Expr.sub(
+                                                Expr.mul(r_low.index(j),Expr.sum(t2.pick([[i,j] for i in range(N)]))),\
+                                                Expr.sub(Expr.mul(ka,r_hat.index([m,j])),Expr.mul(ka,r_low.index(j)))
+                                                ),\
+                                                ),
+                             Domain.greaterThan(0))
+
+        for i in range(N):
+            model.constraint(Expr.sub(t0.index(i),Expr.add(Expr.sum(wr[m].pick([[i,j] for j in range(N)])),\
+                                                          Expr.sum(wp[m].pick([[i,j] for j in range(N)]))) ),\
+                                                          Domain.greaterThan(0))
+            if i == 0:
+                model.constraint(Expr.sub(t0.index(i),Expr.add(Expr.sum(vr[m].pick([[i,j] for j in range(N)])),\
+                                                            Expr.sum(vp[m].pick([[i,j] for j in range(N)]))) ),\
+                                                            Domain.greaterThan(0))
+            else:
+                model.constraint(Expr.sub(Expr.sub(t0.index(i),t0.index(i-1)),Expr.add(Expr.sum(vr[m].pick([[i,j] for j in range(N)])),\
+                                                            Expr.sum(vp[m].pick([[i,j] for j in range(N)]))) ),\
+                                                            Domain.greaterThan(0))
+            
+
+            for j in range(N):
+                model.constraint(Expr.sub(wr[m].index([i,j]), Expr.sub(Expr.mul(r_bar.index(j),x.index([i,j])),Expr.mul(r_bar.index(j),t2.index([i,j])))),\
+                                        Domain.greaterThan(0) )
+                model.constraint(Expr.sub(wr[m].index([i,j]), Expr.sub(Expr.mul(r_low.index(j),x.index([i,j])),Expr.mul(r_low.index(j),t2.index([i,j])))),\
+                                        Domain.greaterThan(0) )
+                model.constraint(Expr.add(wp[m].index([i,j]), Expr.mul(p_bar.index(j),t1.index([i,j]))),\
+                                        Domain.greaterThan(0) )
+                model.constraint(Expr.add(wp[m].index([i,j]), Expr.mul(p_low.index(j),t1.index([i,j]))),\
+                                        Domain.greaterThan(0) )
+                
+                if i == 0:
+                    model.constraint(Expr.add(vr[m].index([i,j]), Expr.mul(r_bar.index(j),t2.index([i,j]))),\
+                                        Domain.greaterThan(0))
+                    model.constraint(Expr.add(vr[m].index([i,j]), Expr.mul(r_low.index(j),t2.index([i,j]))),\
+                                        Domain.greaterThan(0))
+                    
+                    model.constraint(Expr.add(vp[m].index([i,j]), Expr.mul(p_bar.index(j),t1.index([i,j])
+                                                                   )),\
+                                            Domain.greaterThan(0) )
+                    model.constraint(Expr.add(vp[m].index([i,j]), Expr.mul(p_low.index(j),t1.index([i,j])
+                                                                   )),\
+                                            Domain.greaterThan(0) )
+                else:
+                    model.constraint(Expr.sub(vr[m].index([i,j]), 
+                                                Expr.sub(Expr.mul(t2.index([i-1,j]),r_bar.index(j)),\
+                                                        Expr.mul(t2.index([i,j]),r_bar.index(j)))
+                                                        ),
+                                        Domain.greaterThan(0))
+                    model.constraint(Expr.sub(vr[m].index([i,j]), 
+                                                Expr.sub(Expr.mul(t2.index([i-1,j]),r_low.index(j)),\
+                                                        Expr.mul(t2.index([i,j]),r_low.index(j)))
+                                                        ),
+                                        Domain.greaterThan(0))
+                    
+                    model.constraint(Expr.sub(vp[m].index([i,j]), 
+                                              Expr.add(
+                                                Expr.sub(Expr.mul(x.index([i-1,j]),p_bar.index(j)),\
+                                                        Expr.mul(t1.index([i,j]),p_bar.index(j))),\
+                                                        Expr.mul(t1.index([i-1,j]),p_bar.index(j))
+                                                        )),
+                                        Domain.greaterThan(0))
+                    model.constraint(Expr.sub(vp[m].index([i,j]), 
+                                              Expr.add(
+                                                Expr.sub(Expr.mul(x.index([i-1,j]),p_low.index(j)),\
+                                                        Expr.mul(t1.index([i,j]),p_low.index(j))),\
+                                                        Expr.mul(t1.index([i-1,j]),p_low.index(j))
+                                                        )),
+                                        Domain.greaterThan(0))
+
+
+    model.objective("obj", ObjectiveSense.Minimize, Expr.add(Expr.mul(c,ka),Expr.mul(1/M,Expr.sum(theta))))
+
+
+    # xr_tem = x_tem @ r
+    # xd_tem = x_tem @ d_bar
+    # xp_tem = x_tem @ p_hat
+
+    # xr.setValue(xr_tem)
+    # xd.setValue(xd_tem)
+    # xp.setValue(xp_tem)
+    # ka.setValue(ka_tem)
+
+    # model.solve()
+    # sol = theta.level()
+    # obj_val = c*ka_tem + (1/M)*np.sum(sol)
+
+
+    return model
+
+
+
+
+
+
+
+# -------------- history -----------------------------------
 def obtain_mosek_RS_model(M,N):
 
     # with Model() as model:
