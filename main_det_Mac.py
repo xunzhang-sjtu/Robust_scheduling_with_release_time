@@ -63,7 +63,7 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
 
 
-project_path = '/Users/zhangxun/data/robust_scheduling/det_release/uncertainty_set_size/'
+project_path = 'D:/DRO_scheduling/det_release/uncertainty_set_size/'
 delta_mu = 4 # control lb of mean processing time
 delta_r = 0.1 # control ub of the release time
 delta_ep = 1.5 # control the upper bound of the mad
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     for ins in range(2):
         # Seed = 10 + ins
         # np.random.seed(Seed)
-        n_all = [8]
+        n_all = [30]
         for n in n_all:
             mu_p = np.random.uniform(10*delta_mu,50,n)
             r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
