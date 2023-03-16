@@ -18,7 +18,7 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-time_limits = 3600
+time_limits = 360
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
     # mu = np.round(mu,1)
@@ -770,7 +770,7 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
     model.optimize()
     end_time = time.time()
     cpu_time = end_time - start_time   
-    if model.status == 2 or model.status == 13:
+    if model.status == 2 or model.status == 13 or model.status == 9:
         obj_val = model.getObjective().getValue()
         x_tem = np.zeros((N,N))
         for i in range(N):
@@ -791,7 +791,7 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
     return sol
 
 
-def rand_release_time_scheduling_wass_affin_scenario(N,c,M,r_hat,p_hat,p_low,p_bar,r_low,r_bar):
+def rand_release_time_scheduling_wass_affine_scenario(N,c,M,r_hat,p_hat,p_low,p_bar,r_low,r_bar):
 
 
     model = gp.Model('affine')
@@ -900,7 +900,7 @@ def rand_release_time_scheduling_wass_affin_scenario(N,c,M,r_hat,p_hat,p_low,p_b
     model.optimize()
     end_time = time.time()
     cpu_time = end_time - start_time   
-    if model.status == 2 or model.status == 13:
+    if model.status == 2 or model.status == 13 or model.status == 9:
         obj_val = model.getObjective().getValue()
         x_tem = np.zeros((N,N))
         for i in range(N):
