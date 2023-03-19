@@ -61,10 +61,10 @@ def generate_correlated_Normal(mu_p,std_p,mu_r,std_r,cov_bar,data_size,quan_low,
 
     N = len(mu_p)
     mu = np.append(mu_p,mu_r)
-    std = np.append(std_p,std_r)
+    std = np.append(std_p*std_p,std_r*std_r)
     cov = np.diag(std)
     for i in range(N):
-        temp = np.random.uniform(0,cov_bar) * std[i] * std[N+i]
+        temp = np.random.uniform(0,cov_bar) * std_p[i] * std_r[i]
         cov[i,N+i] = temp
         cov[N+i,i] = temp
 

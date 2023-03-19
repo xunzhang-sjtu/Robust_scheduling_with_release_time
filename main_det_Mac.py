@@ -57,6 +57,9 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
     
         exact_model = False
         sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
+        
+        
+        
         # if n <= 20:
         #     exact_model = True
         #     sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
@@ -86,6 +89,8 @@ def effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_pa
         # # obtain a empty model
         model_DRO = mosek_models.obtain_mosek_model(S_train,n)
         models_DRO = [model_DRO.clone() for _ in range(n)] 
+        # model_DRO = 1
+        # models_DRO = 1
         file_path1 = file_path + 'n='+str(n) + '/'
         for ins in range(instances):
             # Seed = 10 + ins
@@ -106,8 +111,8 @@ delta_ep = 1 # control the upper bound of the mad
 S_train = 20
 S_test = 10000
 iterations = 1
-instances = 20
-range_c = np.arange(0,1.001,0.2)
+instances = 1
+range_c = np.arange(0,0.1001,0.2)
 if __name__ == '__main__':
 
     # # impact of variance of processing time
@@ -125,8 +130,8 @@ if __name__ == '__main__':
 
 
     # impact of number of jobs
-    N_all = [10,20,30,40,50]
-    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/num_jobs/'
+    N_all = [20]
+    file_path = 'D:/DRO_scheduling/det_release/num_jobs/'
     effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 
 

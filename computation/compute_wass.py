@@ -24,6 +24,11 @@ def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_mo
         rst_wass_time.append(sol['time'])
         rst_wass_list[c] = np.int32(np.round(sol['x_seq'])+1) 
 
+
+
+
+
+
         # print('Wass time = ',np.round(sol['time'],2),\
         # ',obj =',np.round(sol['obj'] + r_mu.sum(),2))
     sol = {}
@@ -74,9 +79,9 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
     return sol
 
 
-def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_bar,p_low,r_low,r_bar,range_c,full_path):
+def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_bar,p_low,r_low,r_bar,range_c,full_path,sol_saa):
     # ******** wassertein dro **************
-    max_c = sum(p_bar - p_low) + sum(r_bar - r_low)
+    max_c = sol_saa['obj']
     c_set = range_c*max_c
     c_set[0] = 0.000001
     # print('-------- Solve Wass DRO --------------------')        
@@ -91,6 +96,9 @@ def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_
     for i in range(len(c_set)):
         c = c_set[i]
         sol = dro_models.rand_release_time_scheduling_wass_affine(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
+        # sol = dro_models.rand_release_time_scheduling_wass_affine_scenario(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
+
+        
         c = sol['c']
         rst_wass_obj.append(sol['obj'])
         rst_wass_time.append(sol['time'])

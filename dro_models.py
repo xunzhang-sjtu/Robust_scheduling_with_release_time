@@ -18,7 +18,7 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-time_limits = 360
+time_limits = 3600
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
     # mu = np.round(mu,1)
@@ -99,6 +99,9 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
     y = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'y')
 
     x = model.addVars(N,N,vtype = GRB.BINARY,name = 'x')
+    # x = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0, name = 'x')
+
+
 
     model.setObjective(c*ka + (1/M)*quicksum(theta),GRB.MINIMIZE)
 
@@ -183,7 +186,7 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
     sol['time'] = cpu_time
     sol['x_seq'] = x_seq
     sol['obj'] = obj_val
-
+    sol['ka'] = ka.x
     return sol
 
 

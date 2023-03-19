@@ -21,10 +21,10 @@ import data_generation as dg
 
 
 def main_process(r_mu,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path,cov_bar):
+    N = n
     for it in range(iterations):
         print('----------------------- ins:',ins,' n:',n,' iteration:',it,'-------------------------------------')
-
-        full_path = file_path  + 'n='+str(n)+'/' + 'ins='+str(ins)+'/'+ 'iteration='+str(it)+'/'
+        full_path = file_path + 'ins='+str(ins) + '/' 'iteration='+str(it)+'/'
         # if os.path.exists(full_path+'data_info.pkl'):
         if False:
             with open(full_path+'data_info.pkl', "rb") as tf:
@@ -69,9 +69,9 @@ def main_process(r_mu,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path
         p_mu_esti = np.mean(train_data_p,axis = 1)
         # p_std_esti = np.std(train_data,axis = 1)
         # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
-        sol_det = det.deter_rand_release(n,S_test,r_mu_esti,p_mu_esti,test_data_p,test_data_r,full_path)
+        # sol_det = det.deter_rand_release(n,S_test,r_mu_esti,p_mu_esti,test_data_p,test_data_r,full_path)
         sol_saa = saa.SAA_random_release(n,S_train,S_test,train_data_p,train_data_r,test_data_r,test_data_p,full_path)
-        sol_wass = wass.wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_bar,p_low,r_low,r_bar,range_c,full_path)
+        sol_wass = wass.wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_bar,p_low,r_low,r_bar,range_c,full_path,sol_saa)
 
 
 
@@ -129,35 +129,33 @@ def effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_pa
             # ------ need to notice -----
             delta_er = delta_ep
             mad_r = np.random.uniform(0,delta_er*mu_r)
-            std_r = np.sqrt(np.pi/2)*mad_r
-            
-            cov_bar = 0.5
-            dg.generate_correlated_Normal(mu_p,std_p,mu_r,std_r,cov_bar,data_size,quan_low,quan_bar)
-            
-            
+            std_r = np.sqrt(np.pi/2)*mad_r       
+
             print('----------------------- delta_r:',delta_r,'-------------------------------------')
-            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
+            cov_bar = np.nan
+            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path,cov_bar)
 
 def effect_correlation(instances,iterations,delta_mu,n,delta_ep,S_train,file_path,cov_bar_all):
     # obtain a empty model
     model_DRO = None
     models_DRO = None
-    file_path1 = file_path + 'n='+str(n) + '/'
-    for ins in range(instances):
-        # Seed = 10 + ins
-        # np.random.seed(Seed)
-        mu_p = np.random.uniform(10*delta_mu,50,n)
-        mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
-        mad_p = np.random.uniform(0,delta_ep*mu_p)
-        std_p = np.sqrt(np.pi/2)*mad_p
-        # ------ need to notice -----
-        delta_er = delta_ep
-        mad_r = np.random.uniform(0,delta_er*mu_r)
-        std_r = np.sqrt(np.pi/2)*mad_r
-        
-        for cov_bar in cov_bar_all:
-            print('----------------------- delta_r:',delta_r,'-------------------------------------')
-            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path,cov_bar)
+    
+    for cov_bar in cov_bar_all:
+        print('----------------------- cov_bar:',cov_bar,'-------------------------------------')
+        file_path1 = file_path + 'cov_bar='+str(cov_bar) + '/'
+        for ins in range(instances):
+            # Seed = 10 + ins
+            # np.random.seed(Seed)
+            mu_p = np.random.uniform(10*delta_mu,50,n)
+            mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
+            mad_p = np.random.uniform(0,delta_ep*mu_p)
+            std_p = np.sqrt(np.pi/2)*mad_p
+            # ------ need to notice -----
+            delta_er = delta_ep
+            mad_r = np.random.uniform(0,delta_er*mu_r)
+            std_r = np.sqrt(np.pi/2)*mad_r
+            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
+
 
 
 
@@ -166,13 +164,13 @@ def effect_correlation(instances,iterations,delta_mu,n,delta_ep,S_train,file_pat
 
 project_path = '/Users/zhangxun/data/robust_scheduling/det_release/vns_vs_exact/'
 delta_mu = 4 # control lb of mean processing time
-delta_r = 0.1 # control ub of the release time
+delta_r = 1 # control ub of the release time
 delta_ep = 1 # control the upper bound of the mad
 S_train = 20
 S_test = 10000
 iterations = 1
 instances = 20
-range_c = np.arange(0,1.001,0.2)
+range_c = np.arange(0,0.5001,0.05)
 if __name__ == '__main__':
 
     # # impact of variance of processing time
@@ -189,17 +187,16 @@ if __name__ == '__main__':
     # effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
 
 
-    # # impact of number of jobs
-    # N_all = [3]
-    # file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/num_jobs/'
+    # impact of number of jobs
+    # N_all = [4]
+    # file_path = 'D:/DRO_scheduling/rand_release/in_sample/'
     # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 
 
     # impact of correlation between release and processing time
-
-    N = 8
-    cov_bar_all = np.arange(0.4,0.6,0.2)
-    file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/correlation/'
+    N = 20
+    cov_bar_all = np.arange(0.2,0.8,0.2)
+    file_path = 'D:/DRO_scheduling/rand_release/correlation/'
     effect_correlation(instances,iterations,delta_mu,N,delta_ep,S_train,file_path,cov_bar_all)
 
  
