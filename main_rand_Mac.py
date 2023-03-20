@@ -21,55 +21,15 @@ import data_generation as dg
 
 
 def main_process(r_mu,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path,cov_bar):
-    N = n
     for it in range(iterations):
         print('----------------------- ins:',ins,' n:',n,' iteration:',it,'-------------------------------------')
         full_path = file_path + 'ins='+str(ins) + '/' 'iteration='+str(it)+'/'
-        # if os.path.exists(full_path+'data_info.pkl'):
-        if False:
-            with open(full_path+'data_info.pkl', "rb") as tf:
-                data_info = pickle.load(tf)
-            temp = data_info['data']
-            p_bar = data_info['p_bar']
-            p_low = data_info['p_low']
-            train_data = temp[:,0:S_train]
-            test_data = temp[:,S_train:S_train+S_test]
-        else:
-            # temp,p_bar,p_low = generate_LogNormal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
-            if not np.isnan(cov_bar):
-                data_info = dg.generate_correlated_Normal(mu_p,std_p,r_mu,std_r,cov_bar,S_train+S_test,0.1,0.9)
-                p_bar = data_info['bar'][0:N]
-                p_low = data_info['low'][0:N]
-                r_bar = data_info['bar'][N:2*N]
-                r_low = data_info['low'][N:2*N]
-                train_data_p = (data_info['data'][0:S_train,0:N]).T
-                test_data_p = (data_info['data'][S_train:S_train+S_test,0:N]).T
-                train_data_r = (data_info['data'][0:S_train,N:2*N]).T
-                test_data_r = (data_info['data'][S_train:S_train+S_test,N:2*N]).T
-            else:
-                data_info = dg.generate_Normal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
-                temp = data_info['data']
-                p_bar = data_info['p_bar']
-                p_low = data_info['p_low']
-                train_data_p = temp[:,0:S_train]
-                test_data_p = temp[:,S_train:S_train+S_test]
-
-                data_info = dg.generate_Normal(r_mu,std_r,n,S_train+S_test,0.1,0.9)
-                temp = data_info['data']
-                r_bar = data_info['p_bar']
-                r_low = data_info['p_low']
-                train_data_r = temp[:,0:S_train]
-                test_data_r = temp[:,S_train:S_train+S_test]
-            # create a folder to store the data
-            pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
-            with open(full_path+'data_info.pkl', "wb") as tf:
-                pickle.dump(data_info,tf)
+        # obtain data
+        p_bar,p_low,r_bar,r_low,train_data_p,test_data_p,train_data_r,test_data_r = dg.obtain_data(n,mu_p,std_p,r_mu,std_r,cov_bar,S_train,S_test,full_path)
 
         r_mu_esti = np.mean(train_data_r,axis = 1)
         p_mu_esti = np.mean(train_data_p,axis = 1)
-        # p_std_esti = np.std(train_data,axis = 1)
-        # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
-        # sol_det = det.deter_rand_release(n,S_test,r_mu_esti,p_mu_esti,test_data_p,test_data_r,full_path)
+        sol_det = det.deter_rand_release(n,S_test,r_mu_esti,p_mu_esti,test_data_p,test_data_r,full_path)
         sol_saa = saa.SAA_random_release(n,S_train,S_test,train_data_p,train_data_r,test_data_r,test_data_p,full_path)
         sol_wass = wass.wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_bar,p_low,r_low,r_bar,range_c,full_path,sol_saa)
 
@@ -164,7 +124,7 @@ def effect_correlation(instances,iterations,delta_mu,n,delta_ep,S_train,file_pat
 
 project_path = '/Users/zhangxun/data/robust_scheduling/det_release/vns_vs_exact/'
 delta_mu = 4 # control lb of mean processing time
-delta_r = 1 # control ub of the release time
+delta_r = 0.1 # control ub of the release time
 delta_ep = 1 # control the upper bound of the mad
 S_train = 20
 S_test = 10000
@@ -194,7 +154,7 @@ if __name__ == '__main__':
 
 
     # impact of correlation between release and processing time
-    N = 20
+    N = 10
     cov_bar_all = np.arange(0.2,0.8,0.2)
     file_path = 'D:/DRO_scheduling/rand_release/correlation/'
     effect_correlation(instances,iterations,delta_mu,N,delta_ep,S_train,file_path,cov_bar_all)

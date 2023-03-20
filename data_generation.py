@@ -6,6 +6,8 @@ Created on Tue Oct 20 11:26:55 2020
 """
 import math
 import numpy as np
+import pathlib
+import pickle
 
 def generate_Normal(mu_p,std_p,n,k,quan_low,quan_bar):
     p_low = np.zeros(n)
@@ -90,3 +92,48 @@ def generate_correlated_Normal(mu_p,std_p,mu_r,std_r,cov_bar,data_size,quan_low,
     data_info['bar'] = p_bar
     data_info['low'] = p_low
     return data_info
+
+
+def obtain_data(n,mu_p,std_p,r_mu,std_r,cov_bar,S_train,S_test,full_path):
+    N = n
+    # if os.path.exists(full_path+'data_info.pkl'):
+    if False:
+        with open(full_path+'data_info.pkl', "rb") as tf:
+            data_info = pickle.load(tf)
+        temp = data_info['data']
+        p_bar = data_info['p_bar']
+        p_low = data_info['p_low']
+        train_data = temp[:,0:S_train]
+        test_data = temp[:,S_train:S_train+S_test]
+    else:
+        # temp,p_bar,p_low = generate_LogNormal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
+        if not np.isnan(cov_bar):
+            data_info = generate_correlated_Normal(mu_p,std_p,r_mu,std_r,cov_bar,S_train+S_test,0.1,0.9)
+            p_bar = data_info['bar'][0:N]
+            p_low = data_info['low'][0:N]
+            r_bar = data_info['bar'][N:2*N]
+            r_low = data_info['low'][N:2*N]
+            train_data_p = (data_info['data'][0:S_train,0:N]).T
+            test_data_p = (data_info['data'][S_train:S_train+S_test,0:N]).T
+            train_data_r = (data_info['data'][0:S_train,N:2*N]).T
+            test_data_r = (data_info['data'][S_train:S_train+S_test,N:2*N]).T
+        else:
+            data_info = generate_Normal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
+            temp = data_info['data']
+            p_bar = data_info['p_bar']
+            p_low = data_info['p_low']
+            train_data_p = temp[:,0:S_train]
+            test_data_p = temp[:,S_train:S_train+S_test]
+
+            data_info = generate_Normal(r_mu,std_r,n,S_train+S_test,0.1,0.9)
+            temp = data_info['data']
+            r_bar = data_info['p_bar']
+            r_low = data_info['p_low']
+            train_data_r = temp[:,0:S_train]
+            test_data_r = temp[:,S_train:S_train+S_test]
+        # create a folder to store the data
+        pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
+        with open(full_path+'data_info.pkl', "wb") as tf:
+            pickle.dump(data_info,tf)
+    
+    return p_bar,p_low,r_bar,r_low,train_data_p,test_data_p,train_data_r,test_data_r
