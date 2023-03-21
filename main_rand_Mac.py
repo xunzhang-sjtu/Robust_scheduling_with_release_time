@@ -22,7 +22,7 @@ import data_generation as dg
 
 def main_process(r_mu,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path,cov_bar):
     for it in range(iterations):
-        print('----------------------- ins:',ins,' n:',n,' iteration:',it,'-------------------------------------')
+        # print('----------------------- ins:',ins,' n:',n,' iteration:',it,'-------------------------------------')
         full_path = file_path + 'ins='+str(ins) + '/' 'iteration='+str(it)+'/'
         # obtain data
         p_bar,p_low,r_bar,r_low,train_data_p,test_data_p,train_data_r,test_data_r = dg.obtain_data(n,mu_p,std_p,r_mu,std_r,cov_bar,S_train,S_test,full_path)
@@ -35,73 +35,55 @@ def main_process(r_mu,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path
 
 
 
-def effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path):
-    # # obtain a empty model
-    model_DRO = mosek_models.obtain_mosek_model(S_train,n)
-    models_DRO = [model_DRO.clone() for _ in range(n)] 
-
+def effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,delta_er,S_train,file_path):
     for delta_ep in delta_ep_all:
         file_path1 = file_path + 'delta_ep='+str(delta_ep) + '/'
         for ins in range(instances):
-            # Seed = 10 + ins
-            # np.random.seed(Seed)
             mu_p = np.random.uniform(10*delta_mu,50,n)
-            r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
-            mad_p = np.random.uniform(0,delta_ep*mu_p)
-            std_p = np.sqrt(np.pi/2)*mad_p
-            print('----------------------- delta_ep:',delta_ep,'-------------------------------------')
-            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
-
-def effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path):
-    # # obtain a empty model
-    model_DRO = mosek_models.obtain_mosek_model(S_train,n)
-    models_DRO = [model_DRO.clone() for _ in range(n)] 
-
-    for delta_r in delta_r_all:
-        file_path1 = file_path + 'delta_r='+str(delta_r) + '/'
-        for ins in range(instances):
-            # Seed = 10 + ins
-            # np.random.seed(Seed)
-            mu_p = np.random.uniform(10*delta_mu,50,n)
-            r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
-            mad_p = np.random.uniform(0,delta_ep*mu_p)
-            std_p = np.sqrt(np.pi/2)*mad_p
-            print('----------------------- delta_r:',delta_r,'-------------------------------------')
-            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
-
-def effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path):
-
-    for n in N_all:
-        # obtain a empty model
-        # model_DRO = mosek_models.obtain_mosek_random_model(S_train,n)
-        # models_DRO = [model_DRO.clone() for _ in range(n)] 
-
-        model_DRO = None
-        models_DRO = None
-        file_path1 = file_path + 'n='+str(n) + '/'
-        for ins in range(instances):
-            # Seed = 10 + ins
-            # np.random.seed(Seed)
             mu_p = np.random.uniform(10*delta_mu,50,n)
             mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
             mad_p = np.random.uniform(0,delta_ep*mu_p)
-            std_p = np.sqrt(np.pi/2)*mad_p
-            # ------ need to notice -----
-            delta_er = delta_ep
             mad_r = np.random.uniform(0,delta_er*mu_r)
-            std_r = np.sqrt(np.pi/2)*mad_r       
+            std_p = np.sqrt(np.pi/2)*mad_p
+            std_r = np.sqrt(np.pi/2)*mad_r
+            print('----------------------- delta_ep:',delta_ep,' ins,',ins,'-------------------------------------')
+            cov_bar = np.NaN
+            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
 
-            print('----------------------- delta_r:',delta_r,'-------------------------------------')
-            cov_bar = np.nan
-            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path,cov_bar)
+def effect_release_variance(instances,iterations,n,delta_mu,delta_r,delta_ep,delta_er_all,S_train,file_path):
+    for delta_er in delta_er_all:
+        file_path1 = file_path + 'delta_er='+str(delta_er) + '/'
+        for ins in range(instances):
+            mu_p = np.random.uniform(10*delta_mu,50,n)
+            mu_p = np.random.uniform(10*delta_mu,50,n)
+            mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
+            mad_p = np.random.uniform(0,delta_ep*mu_p)
+            mad_r = np.random.uniform(0,delta_er*mu_r)
+            std_p = np.sqrt(np.pi/2)*mad_p
+            std_r = np.sqrt(np.pi/2)*mad_r
+            print('----------------------- delta_er:',delta_er,' ins,',ins,'-------------------------------------')
+            cov_bar = np.NaN
+            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
 
-def effect_correlation(instances,iterations,delta_mu,n,delta_ep,S_train,file_path,cov_bar_all):
-    # obtain a empty model
-    model_DRO = None
-    models_DRO = None
-    
+
+def effect_num_jobs(instances,iterations,delta_mu,N_all,delta_r,delta_ep,delta_er,S_train,file_path):
+
+    for n in N_all:
+        file_path1 = file_path + 'n='+str(n) + '/'
+        for ins in range(instances):
+            mu_p = np.random.uniform(10*delta_mu,50,n)
+            mu_p = np.random.uniform(10*delta_mu,50,n)
+            mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
+            mad_p = np.random.uniform(0,delta_ep*mu_p)
+            mad_r = np.random.uniform(0,delta_er*mu_r)
+            std_p = np.sqrt(np.pi/2)*mad_p
+            std_r = np.sqrt(np.pi/2)*mad_r
+            print('----------------------- n:',n,' ins,',ins,'-------------------------------------')
+            cov_bar = np.NaN
+            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
+
+def effect_correlation(instances,iterations,delta_mu,n,delta_ep,delta_er,S_train,file_path,cov_bar_all):    
     for cov_bar in cov_bar_all:
-        print('----------------------- cov_bar:',cov_bar,'-------------------------------------')
         file_path1 = file_path + 'cov_bar='+str(cov_bar) + '/'
         for ins in range(instances):
             # Seed = 10 + ins
@@ -109,11 +91,10 @@ def effect_correlation(instances,iterations,delta_mu,n,delta_ep,S_train,file_pat
             mu_p = np.random.uniform(10*delta_mu,50,n)
             mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
             mad_p = np.random.uniform(0,delta_ep*mu_p)
-            std_p = np.sqrt(np.pi/2)*mad_p
-            # ------ need to notice -----
-            delta_er = delta_ep
             mad_r = np.random.uniform(0,delta_er*mu_r)
+            std_p = np.sqrt(np.pi/2)*mad_p
             std_r = np.sqrt(np.pi/2)*mad_r
+            print('----------------------- cov_bar:',cov_bar,' ins,',ins,'-------------------------------------')
             main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
 
 
@@ -126,6 +107,7 @@ project_path = '/Users/zhangxun/data/robust_scheduling/det_release/vns_vs_exact/
 delta_mu = 4 # control lb of mean processing time
 delta_r = 0.1 # control ub of the release time
 delta_ep = 1 # control the upper bound of the mad
+delta_er = 0.1 # control the upper bound of the mad
 S_train = 20
 S_test = 10000
 iterations = 1
@@ -133,31 +115,30 @@ instances = 20
 range_c = np.arange(0,0.5001,0.05)
 if __name__ == '__main__':
 
-    # # impact of variance of processing time
-    # n = 20
-    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/processing_variance/'
-    # delta_ep_all = np.arange(0.2,2.1,0.2)
-    # effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
+    # impact of variance of processing time
+    n = 20
+    file_path = 'D:/DRO_scheduling/rand_release/processing_variance/'
+    delta_ep_all = np.arange(0.2,2.1,0.2)
+    effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,delta_er,S_train,file_path)
 
 
     # # impact of range of release time
     # n = 10
-    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/release_range/'
+    # file_path = 'D:/DRO_scheduling/rand_release/release_range/'
     # delta_r_all = [0.05,0.1]
-    # effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
+    # effect_release_variance(instances,iterations,n,delta_mu,delta_r,delta_ep,delta_er_all,S_train,file_path)
 
 
-    # impact of number of jobs
-    # N_all = [4]
-    # file_path = 'D:/DRO_scheduling/rand_release/in_sample/'
-    # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
+    # # impact of number of jobs
+    # N_all = [4,6]
+    # file_path = 'D:/DRO_scheduling/rand_release/num_jobs/'
+    # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_r,delta_ep,delta_er,S_train,file_path)
 
-
-    # impact of correlation between release and processing time
-    N = 10
-    cov_bar_all = np.arange(0.2,0.8,0.2)
-    file_path = 'D:/DRO_scheduling/rand_release/correlation/'
-    effect_correlation(instances,iterations,delta_mu,N,delta_ep,S_train,file_path,cov_bar_all)
+    # # impact of correlation between release and processing time
+    # N = 10
+    # cov_bar_all = np.arange(0.2,0.8,0.2)
+    # file_path = 'D:/DRO_scheduling/rand_release/correlation/'
+    # effect_correlation(instances,iterations,delta_mu,N,delta_ep,delta_er,S_train,file_path,cov_bar_all)
 
  
 
