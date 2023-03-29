@@ -93,43 +93,45 @@ def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_
     rst_wass_time = []
     rst_wass_obj = []
 
+    no_sol_flag = 0
     for i in range(len(c_set)):
         c = c_set[i]
-        sol = dro_models.rand_release_time_scheduling_wass_affine(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
+        sol_wass = dro_models.rand_release_time_scheduling_wass_affine(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
         # sol = dro_models.rand_release_time_scheduling_wass_affine_scenario(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
+        if np.isnan(sol_wass['obj']):
+            no_sol_flag = 1
+            break
+        else:
+            rst_wass_obj.append(sol_wass['obj'])
+            rst_wass_time.append(sol_wass['time'])
+            rst_wass_list[c] = np.int32(np.round(sol_wass['x_seq'])+1) 
 
-        
-        c = sol['c']
-        rst_wass_obj.append(sol['obj'])
-        rst_wass_time.append(sol['time'])
-        rst_wass_list[c] = np.int32(np.round(sol['x_seq'])+1) 
+        # print('Wass time = ',np.round(sol_wass['time'],2),\
+        #       ' c =',c,\
+        # ',obj =',np.round(sol_wass['obj'],2))
 
-        # print('Wass time = ',np.round(sol['time'],2),\
-        # ',obj =',np.round(sol['obj'] + r_mu.sum(),2))
     sol = {}
+    sol['no_sol_flag'] = no_sol_flag
     sol['obj'] = rst_wass_obj
     sol['seq'] = rst_wass_list
     sol['time'] = rst_wass_time
 
+    if no_sol_flag == 0:
+        # --- compute out of sample performance ------
+        tft_wass = pd.DataFrame()
+        for i in range(len(c_set)):
+            tft_wass[i] = out_sample.computeTotal_rand_release(n,test_data_p,test_data_r,S_test,rst_wass_list[c_set[i]])
+        sol['out_obj'] = tft_wass
 
+        # print results
+        print('Affine Wass time = ',np.round(sol['time'],2))
+        print('Affine Wass obj = ',np.round(sol['obj'],2))
+        print('Affine mean =',np.round(tft_wass.mean(axis = 0).to_list(),2))
+        print('Affine quantile 95 =',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
 
-    
+        # store results
 
-    # --- compute out of sample performance ------
-    tft_wass = pd.DataFrame()
-    for i in range(len(c_set)):
-        tft_wass[i] = out_sample.computeTotal_rand_release(n,test_data_p,test_data_r,S_test,rst_wass_list[c_set[i]])
-    sol['out_obj'] = tft_wass
-
-    # print results
-    print('Affine Wass time = ',np.round(sol['time'],2))
-    print('Affine Wass obj = ',np.round(sol['obj'],2))
-    print('Affine mean =',np.round(tft_wass.mean(axis = 0).to_list(),2))
-    print('Affine quantile 95 =',np.round(tft_wass.quantile(q = 0.95,axis = 0).to_list(),2))
-
-    # store results
-
-    with open(full_path+'sol_wass_affine.pkl', "wb") as tf:
-        pickle.dump(sol,tf)
+        with open(full_path+'sol_wass_affine.pkl', "wb") as tf:
+            pickle.dump(sol,tf)
 
     return sol

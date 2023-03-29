@@ -18,7 +18,7 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-time_limits = 3600
+time_limits = 600
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
     # mu = np.round(mu,1)
@@ -763,7 +763,7 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
     model.setParam('OutputFlag', 0)
-    # model.setParam('MIPGap',0.05)
+    model.setParam('MIPGap',0.01)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
@@ -783,8 +783,8 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
         x_seq = x_tem @ np.arange(N)
 
     else:
-        obj_val = -1000
-        x_seq = np.arange(N)
+        obj_val = np.NAN
+        x_seq = np.ones(N)*np.NAN
 
     sol = {}
     sol['c'] = c
