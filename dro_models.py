@@ -19,6 +19,7 @@ from rsome import dro
 from rsome import E
 import time
 time_limits = 600
+mip_gap = 0.01
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
     # mu = np.round(mu,1)
@@ -61,7 +62,7 @@ def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
 
 
     model.setParam('OutputFlag', 0)
-    # model.setParam('MIPGap',0.01)
+    model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
@@ -152,8 +153,8 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
         model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
-    model.setParam('OutputFlag', 0)
-    # model.setParam('MIPGap',0.01)
+    model.setParam('OutputFlag', 1)
+    model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
@@ -455,6 +456,195 @@ def det_release_time_scheduling_RS_given_ka(N,r,M,p_hat,d_bar,ka):
     # print('kappa',ka.x)
     return sol
 
+def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar):
+
+
+    model = gp.Model('affine')
+    ka = model.addVar(vtype = GRB.CONTINUOUS,lb = 0,name = 'ka')
+    theta = model.addVars(M,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'theta')
+
+    t0 = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't0')
+    t1 = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't1')
+
+    x = model.addVars(N,N,vtype = GRB.BINARY,name = 'x')
+
+    model.setObjective(c*ka + (1/M)*quicksum(theta),GRB.MINIMIZE)
+
+    bet = {}
+    up = {}
+    vp = {}
+
+    wp = {}
+    sp = {}
+
+    phi_p = {}
+    pi_p = {}
+    for m in range(M):
+        bet[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'bet')
+        up[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0,name = 'up')
+        vp[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = 0,name = 'sp')
+
+
+        model.addConstr(theta[m] >= quicksum(t0) + quicksum([-bet[m][j]*p_hat[j,m] for j in range(N)])\
+            + quicksum([up[m][j]*p_low[j] + vp[m][j]*p_bar[j] for j in range(N) ]))
+
+        for j in range(N):
+            model.addConstr(bet[m][j]==up[m][j] + vp[m][j] - quicksum([t1[i,j] for i in range(N)]) - 1)
+
+            model.addConstr(ka >= bet[m][j])
+            model.addConstr(ka >= -bet[m][j])
+
+
+        wp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'wp')
+        sp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'vp')
+
+        phi_p[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'phi_p')
+        pi_p[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'pi_p')
+
+        for i in range(N):
+            model.addConstr(t0[i] - quicksum([x[i,j] * r[j] for j in range(N)]) >= quicksum([ wp[m][i,j]*p_low[j] + sp[m][i,j]*p_bar[j] for j in range(N)]))
+            for j in range(N):
+                model.addConstr(wp[m][i,j] + sp[m][i,j] == -t1[i,j])
+
+
+            if i == 0:
+                model.addConstr(t0[i] >= quicksum([phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
+                for j in range(N):
+                    model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == -t1[i,j])    
+
+            if i > 0:
+                model.addConstr(t0[i] - t0[i-1] >= quicksum([phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
+                for j in range(N):
+                    model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == x[i-1,j] + t1[i-1,j]-t1[i,j])  
+
+
+
+    for i in range(N):
+        model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
+        model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
+
+    model.setParam('OutputFlag', 1)
+    model.setParam('MIPGap',mip_gap)
+    model.setParam('TimeLimit',time_limits)
+    # model.setParam('ConcurrentMIP',6)
+
+    # model.write("E:\\onedrive\\dro.LP")
+   
+    start_time = time.time()
+    model.optimize()
+    end_time = time.time()
+    cpu_time = end_time - start_time   
+    if model.status == 2 or model.status == 13 or model.status == 9:
+        obj_val = model.getObjective().getValue()
+        x_tem = np.zeros((N,N))
+        for i in range(N):
+            for j in range(N):
+                x_tem[i,j] = x[i,j].x
+
+        x_seq = x_tem @ np.arange(N)
+
+    else:
+        obj_val = np.NAN
+        x_seq = np.ones(N)*np.NAN
+
+    sol = {}
+    sol['c'] = c
+    sol['obj'] = obj_val
+    sol['x_seq'] = x_seq
+    sol['time'] = cpu_time
+    return sol
+
+# --- det affine given ka -----
+def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,ka):
+
+    model = gp.Model('affine')
+    theta = model.addVars(M,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'theta')
+    t0 = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't0')
+    t1 = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't1')
+    x = model.addVars(N,N,vtype = GRB.BINARY,name = 'x')
+    model.setObjective(c*ka + (1/M)*quicksum(theta),GRB.MINIMIZE)
+
+    bet = {}
+    up = {}
+    vp = {}
+
+    wp = {}
+    sp = {}
+
+    phi_p = {}
+    pi_p = {}
+    for m in range(M):
+        bet[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'bet')
+        up[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0,name = 'up')
+        vp[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = 0,name = 'sp')
+
+
+        model.addConstr(theta[m] >= quicksum(t0) + quicksum([-bet[m][j]*p_hat[j,m] for j in range(N)])\
+            + quicksum([up[m][j]*p_low[j] + vp[m][j]*p_bar[j] for j in range(N) ]))
+
+        for j in range(N):
+            model.addConstr(bet[m][j]==up[m][j] + vp[m][j] - quicksum([t1[i,j] for i in range(N)]) - 1)
+            model.addConstr(ka >= bet[m][j])
+            model.addConstr(ka >= -bet[m][j])
+
+        wp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'wp')
+        sp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'vp')
+
+        phi_p[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'phi_p')
+        pi_p[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'pi_p')
+
+        for i in range(N):
+            model.addConstr(t0[i] - quicksum([x[i,j] * r[j] for j in range(N)]) >= quicksum([ wp[m][i,j]*p_low[j] + sp[m][i,j]*p_bar[j] for j in range(N)]))
+            for j in range(N):
+                model.addConstr(wp[m][i,j] + sp[m][i,j] == -t1[i,j])
+
+
+            if i == 0:
+                model.addConstr(t0[i] >= quicksum([phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
+                for j in range(N):
+                    model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == -t1[i,j])    
+
+            if i > 0:
+                model.addConstr(t0[i] - t0[i-1] >= quicksum([phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
+                for j in range(N):
+                    model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == x[i-1,j] + t1[i-1,j]-t1[i,j])  
+
+
+
+    for i in range(N):
+        model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
+        model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
+
+    model.setParam('OutputFlag', 1)
+    model.setParam('MIPGap',mip_gap)
+    model.setParam('TimeLimit',time_limits)
+    # model.setParam('ConcurrentMIP',6)
+
+    # model.write("E:\\onedrive\\dro.LP")
+   
+    start_time = time.time()
+    model.optimize()
+    end_time = time.time()
+    cpu_time = end_time - start_time   
+    if model.status == 2 or model.status == 13 or model.status == 9:
+        obj_val = model.getObjective().getValue()
+        x_tem = np.zeros((N,N))
+        for i in range(N):
+            for j in range(N):
+                x_tem[i,j] = x[i,j].x
+
+        x_seq = x_tem @ np.arange(N)
+
+    else:
+        obj_val = np.NAN
+        x_seq = np.ones(N)*np.NAN
+
+    sol = {}
+    sol['c'] = c
+    sol['obj'] = obj_val
+    sol['x_seq'] = x_seq
+    sol['time'] = cpu_time
+    return sol
 
 
 def rand_release_time_scheduling_wass(N,c,M,r_hat,p_hat,d_bar,r_low,r_bar):

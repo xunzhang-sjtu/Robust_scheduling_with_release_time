@@ -126,25 +126,27 @@ def saa_seq_det_release(N,k,p_hat,r):
         m.addConstr(quicksum([x[ind,i] for ind in range(N)]) == 1 )
 
  
-    m.setParam('OutputFlag', 0)
-    # m.setParam('MIPGap',0.01)
-    # m.setParam('TimeLimit',600)
+    m.setParam('OutputFlag', 1)
+    m.setParam('MIPGap',0.01)
+    m.setParam('TimeLimit',600)
     start = time.time()
     m.optimize()
     end = time.time()
     saa_cpu_time = end - start
-    # m.write("saa.LP")
-    x_result = np.zeros((N,N))
-    for i in range(N):
-        for j in range(N):
-            x_result[i,j] = x[i,j].x
-    x_result = np.asmatrix(x_result)
-    joblist = range(1,N+1)
-    schedule_tem = np.dot(x_result,joblist)
-    schedule = np.zeros(N)
-    for i in range(N):
-        schedule[i] = schedule_tem[0,i]
-    obj = m.getObjective().getValue()
+    if m.status == 2 or m.status == 13 or m.status == 9:
+
+        # m.write("saa.LP")
+        x_result = np.zeros((N,N))
+        for i in range(N):
+            for j in range(N):
+                x_result[i,j] = x[i,j].x
+        x_result = np.asmatrix(x_result)
+        joblist = range(1,N+1)
+        schedule_tem = np.dot(x_result,joblist)
+        schedule = np.zeros(N)
+        for i in range(N):
+            schedule[i] = schedule_tem[0,i]
+        obj = m.getObjective().getValue()
     
     return schedule,obj,saa_cpu_time
 
