@@ -19,9 +19,10 @@ def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_mo
         else: 
             # ====== heuristic solving =======
             # sol = heuristic.vns(n,r_mu,c_set[i],S_train,train_data,p_bar,model_DRO,models_DRO,sol_saa)
-            sol = dro_models.det_release_time_scheduling_wass_affine(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
+            sol = dro_models.det_release_time_scheduling_wass_affine(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
             # opt_obj,ka = gold_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
             sol['obj'] = sol['obj'] - r_mu.sum()
+
 
         c = sol['c']
         rst_wass_obj.append(sol['obj'] + r_mu.sum())

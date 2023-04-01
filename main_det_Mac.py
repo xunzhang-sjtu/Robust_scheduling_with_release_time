@@ -56,8 +56,8 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         exact_model = False
         sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
         
-        exact_model = True
-        sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
+        # exact_model = True
+        # sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
         
 
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
 
     # compare of exact and approximation
-    N_all = [100]
+    N_all = [50]
     file_path = '/Users/zhangxun/data/robust_scheduling/det_release/exact_vs_appro_sample_test/'
     exact_vs_appro(instances,iterations,delta_mu,N_all,S_train,file_path)
 

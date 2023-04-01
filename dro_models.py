@@ -18,7 +18,7 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-time_limits = 600
+time_limits = 1800
 mip_gap = 0.01
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
@@ -456,7 +456,7 @@ def det_release_time_scheduling_RS_given_ka(N,r,M,p_hat,d_bar,ka):
     # print('kappa',ka.x)
     return sol
 
-def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar):
+def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar,x_saa):
 
 
     model = gp.Model('affine')
@@ -523,6 +523,11 @@ def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar):
         model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
+    for i in range(N):
+        for j in range(N):
+            x[i,j].start = x_saa[i,j]
+
+
     model.setParam('OutputFlag', 1)
     model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
@@ -552,6 +557,7 @@ def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar):
     sol['obj'] = obj_val
     sol['x_seq'] = x_seq
     sol['time'] = cpu_time
+    sol['mipGap'] = model.MIPGap
     return sol
 
 # --- det affine given ka -----

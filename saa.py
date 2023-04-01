@@ -126,7 +126,7 @@ def saa_seq_det_release(N,k,p_hat,r):
         m.addConstr(quicksum([x[ind,i] for ind in range(N)]) == 1 )
 
  
-    m.setParam('OutputFlag', 1)
+    m.setParam('OutputFlag', 0)
     m.setParam('MIPGap',0.01)
     m.setParam('TimeLimit',600)
     start = time.time()
