@@ -61,7 +61,6 @@ def obtain_mosek_model(M,N):
 
     model.objective("obj", ObjectiveSense.Minimize, Expr.add(Expr.mul(c,ka),Expr.mul(1/M,Expr.sum(theta))))
 
-
     # xr_tem = x_tem @ r
     # xd_tem = x_tem @ d_bar
     # xp_tem = x_tem @ p_hat
@@ -262,7 +261,110 @@ def obtain_mosek_random_model(M,N):
     return model
 
 
+# det affine
+def  det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar,x_saa):
 
+    # with Model() as model:
+    model = Model()
+    # Create variable 'x' of length 4
+    theta = model.variable("theta",M, Domain.unbounded())
+    ka = model.variable("ka",1,Domain.greaterThan(0))
+
+    t0 = model.variable("t0", [N], Domain.unbounded())
+    t1 = model.variable("t1", [N,N], Domain.unbounded())
+    x = model.variable("x",[N,N],Domain.binary())
+
+
+    phi = {}
+    bet = {}
+    up = {}
+    vp = {}
+
+    wp = {}
+    sp = {}
+    phi_p = {}
+    pi_p = {}
+
+    for m in range(M):
+
+        phi[m] = model.variable(N,Domain.unbounded())
+        bet[m] = model.variable(N,Domain.unbounded())
+        up[m] = model.variable(N,Domain.lessThan(0))
+
+        vp[m] = model.variable(N,Domain.greaterThan(0))
+
+        model.constraint(Expr.sub(theta.index(m),\
+                                    Expr.add(Expr.add(
+                                                Expr.sub(Expr.sum(t0),
+                                                         Expr.dot(p_hat[:,m],bet[m])
+                                                        ),
+                                                Expr.dot(up[m],p_low)
+                                                ),
+                                            Expr.dot(vp[m],p_bar)
+                                        )
+                                    ),
+                            Domain.greaterThan(0)
+                        )
+
+
+        for j in range(N):
+            model.constraint(Expr.sub(bet[m].index(j),
+                                      Expr.sub(Expr.add(up[m].index(j),
+                                                        vp[m].index(j)),
+                                                Expr.sum(t1.pick([[i,j] for i in range(N)]))
+                                                )
+                                    ),Domain.equalsTo(-1)  
+                            )
+            model.constraint(Expr.sub(ka,bet[m].index(j)),Domain.greaterThan(0))
+            model.constraint(Expr.add(ka,bet[m].index(j)),Domain.greaterThan(0))
+
+
+
+        wp[m] = model.variable([N,N],Domain.lessThan(0))
+        sp[m] = model.variable([N,N],Domain.greaterThan(0))
+        phi_p[m] = model.variable([N,N],Domain.lessThan(0))
+        pi_p[m] = model.variable([N,N],Domain.greaterThan(0))
+
+
+        for i in range(N):
+            model.constraint(Expr.sub(Expr.sub(t0.index(i),Expr.dot(x.slice([i,0],[i+1,N]).reshape(N),r)),
+                                      Expr.add(Expr.dot(wp[m].slice([i,0],[i+1,N]).reshape([N]),p_low),\
+                                               Expr.dot(sp[m].slice([i,0],[i+1,N]).reshape([N]),p_bar)))
+                                      ,Domain.greaterThan(0))
+            for j in range(N):
+                model.constraint(Expr.add(Expr.add(wp[m].index([i,j]),sp[m].index([i,j])),t1.index([i,j])),
+                                 Domain.equalsTo(0))
+
+
+            if i == 0:
+                model.constraint(Expr.sub(t0.index(i),
+                                      Expr.add(
+                                               Expr.dot(phi_p[m].slice([i,0],[i+1,N]).reshape([N]),p_low),\
+                                               Expr.dot(pi_p[m].slice([i,0],[i+1,N]).reshape([N]),p_bar))
+                                      ),Domain.greaterThan(0))
+                
+                for j in range(N):
+                    model.constraint(Expr.add(Expr.add(phi_p[m].index([i,j]),pi_p[m].index([i,j])),t1.index([i,j])),Domain.equalsTo(0))
+
+            if i > 0:
+                model.constraint(Expr.sub(Expr.sub(t0.index(i),t0.index(i-1)),
+                                               Expr.add(Expr.dot(phi_p[m].slice([i,0],[i+1,N]).reshape([N]),p_low),\
+                                                        Expr.dot(pi_p[m].slice([i,0],[i+1,N]).reshape([N]),p_bar))
+                                                ),
+                                               Domain.greaterThan(0))
+
+                for j in range(N):
+                    model.constraint(Expr.sub(Expr.add(Expr.add(phi_p[m].index([i,j]),pi_p[m].index([i,j])),t1.index([i,j])),Expr.add(x.index([i-1,j]),t1.index([i-1,j]))),Domain.equalsTo(0))
+
+    model.objective("obj", ObjectiveSense.Minimize, Expr.add(Expr.mul(c,ka),Expr.mul(1/M,Expr.sum(theta))))
+
+    model.solve()
+    primal_obj = model.primalObjValue()
+    # sol = theta.level()
+    # ka = model_mosek.getVariable('ka').level()
+    curr_opt_obj = primal_obj
+    
+    return curr_opt_obj
 
 
 
@@ -380,6 +482,7 @@ def obtain_mosek_full_model(M,N):
 
     model.objective("obj", ObjectiveSense.Minimize, Expr.mul(1/M,Expr.sum(theta)))
 
+    model.setLogHandler(sys.stdout)
 
     # xr_tem = x_tem @ r
     # xd_tem = x_tem @ d_bar

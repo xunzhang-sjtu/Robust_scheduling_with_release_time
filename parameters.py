@@ -8,7 +8,7 @@ def set_para():
     para['S_test'] = 10000
     para['iterations'] = 1
     para['instances'] = 20
-    para['range_c'] = np.arange(0.0,0.3001,0.02)
+    para['range_c'] = np.arange(1e-6,0.2001,0.04) + 1
 
     return para
 

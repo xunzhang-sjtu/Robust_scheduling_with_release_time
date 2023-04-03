@@ -132,7 +132,7 @@ def effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_
             mad_p = np.random.uniform(0,delta_ep*mu_p)
             std_p = np.sqrt(np.pi/2)*mad_p
             print('----------------------- delta_ep:',delta_ep,' ins,',ins,'-------------------------------------')
-            main_process(mu_r,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
+            main_process(mu_r,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path)
             ins = ins + 1
 
 # project_path = '/Users/zhangxun/data/robust_scheduling/det_release/vns_vs_exact/'
@@ -148,11 +148,11 @@ instances = para['instances']
 range_c = para['range_c']
 if __name__ == '__main__':
     np.random.seed(1)
-    # # impact of variance of processing time
-    # n = 10
-    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/processing_variance/'
-    # delta_ep_all = np.arange(1.2,1.21,0.2)
-    # effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
+    # impact of variance of processing time
+    n = 30
+    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/processing_variance_RS/'
+    delta_ep_all = np.arange(1.2,1.21,0.2)
+    effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
 
 
     # # impact of range of release time
@@ -168,10 +168,10 @@ if __name__ == '__main__':
     # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 
 
-    # compare of exact and approximation
-    N_all = [50]
-    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/exact_vs_appro_sample_test/'
-    exact_vs_appro(instances,iterations,delta_mu,N_all,S_train,file_path)
+    # # compare of exact and approximation
+    # N_all = [30]
+    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/exact_vs_appro_sample_test/'
+    # exact_vs_appro(instances,iterations,delta_mu,N_all,S_train,file_path)
 
  
  

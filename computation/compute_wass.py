@@ -5,6 +5,8 @@ import dro_models
 import pickle
 import heuristic
 import pandas as pd
+import time
+
 
 def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_model,model_DRO,models_DRO):
     x_saa,x_dict_saa = heuristic.decode(sol_saa['seq'])
@@ -13,46 +15,46 @@ def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_mo
     rst_wass_obj = []
 
     for i in range(len(c_set)):
+        c = c_set[i]
         if exact_model:
             # ===== exact model ======
             sol = dro_models.det_release_time_scheduling_wass(n,r_mu,c_set[i],S_train,train_data,p_bar,p_low,x_saa)
         else: 
             # ====== heuristic solving =======
             # sol = heuristic.vns(n,r_mu,c_set[i],S_train,train_data,p_bar,model_DRO,models_DRO,sol_saa)
-            sol = dro_models.det_release_time_scheduling_wass_affine(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
-            # opt_obj,ka = gold_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
+            # sol = dro_models.det_release_time_scheduling_wass_affine(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
+            # sol = gold_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
+            sol = bisection_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
             sol['obj'] = sol['obj'] - r_mu.sum()
+            print('-------------------------------------------')
+            # print('Wass time = ',np.round(sol['time'],2),\
+            print('Wass time = ',np.round(sol['time'],2),\
+            ',obj =',np.round(sol['obj'] + r_mu.sum(),2))
 
-
-        c = sol['c']
         rst_wass_obj.append(sol['obj'] + r_mu.sum())
         rst_wass_time.append(sol['time'])
         rst_wass_list[c] = np.int32(np.round(sol['x_seq'])+1) 
 
+    sol_output = {}
+    sol_output['obj'] = rst_wass_obj
+    sol_output['seq'] = rst_wass_list
+    sol_output['time'] = rst_wass_time
 
-
-
-
-
-        # print('Wass time = ',np.round(sol['time'],2),\
-        # ',obj =',np.round(sol['obj'] + r_mu.sum(),2))
-    sol = {}
-    sol['obj'] = rst_wass_obj
-    sol['seq'] = rst_wass_list
-    sol['time'] = rst_wass_time
-
-    return sol
+    return sol_output
 
 def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO):
-    # ******** wassertein dro **************
-    # max_c = sum(p_bar - p_low)
-    c_set = range_c*sol_saa['obj']
-    c_set[0] = 0.000001
-    
-    # print('-------- Solve Wass DRO --------------------')        
-    # solve dro model
     S_train = len(train_data[0,:])
     S_test = len(test_data[0,:])
+
+    # # ******** wassertein dro **************
+    # c_set = range_c*sol_saa['obj']
+    # c_set[0] = 0.000001
+
+    # ******** wassertein RS **************
+    sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
+    c_set = range_c*sol_affine['obj']
+    # print('-------- Solve Wass DRO --------------------')        
+    # solve dro model
     sol = solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_model,model_DRO,models_DRO)
     rst_wass_list = sol['seq']
 
@@ -143,6 +145,40 @@ def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_
     return sol
 
 
+def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar):
+    total_time = 0
+    a = 1e-6
+    b = n+1
+    f_a = {}
+    f_a['obj'] = 1000000
+    f_b = {}
+    f_b['obj'] = 0
+
+    sol = {}
+    max_iter = 15
+    iter = 0
+    while b - a > 0.1 and abs(f_b['obj'] - f_a['obj']) >= 0.0001*tau and iter < max_iter:
+        p = 0.5*(a+b)
+        f_p = dro_models.det_release_time_scheduling_wass_affine_given_ka(n,1,S_train,r_mu,train_data,p_low,p_bar,p)
+        total_time = total_time + f_p['time']
+        if f_p['obj'] <= tau:
+            f_b = f_p
+            b = p
+            sol = f_b
+            sol['c'] = b
+        else:
+            a = p
+            f_a = f_p
+            sol = f_a
+            sol['c'] = b
+        iter = iter + 1
+        # print('-----------------------------------')
+        # print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
+        sol['time'] = total_time
+    return sol
+
+
+
 def gold_search(n,c,S_train,r_mu,train_data,p_low,p_bar):
 
     
@@ -150,7 +186,7 @@ def gold_search(n,c,S_train,r_mu,train_data,p_low,p_bar):
     b = n+1
     
     
-    t = (np.sqrt(5)-1)/2
+    t = 0.618
     p = a+(1-t)*(b-a)
     q = a+t*(b-a)
     
@@ -167,8 +203,8 @@ def gold_search(n,c,S_train,r_mu,train_data,p_low,p_bar):
     loos_t = np.zeros((iterate,1))
     # step1
     k = 0
-    obj_threshold = 0.1
-    while np.abs(f_b-f_a)>=obj_threshold and np.abs(b-a) >= 0.0001 and k < iterate:
+    obj_threshold = 1
+    while np.abs(f_b['obj']-f_a['obj'])>=obj_threshold and np.abs(b-a) >= 0.01 and k < iterate:
         loos_t[k,0] = np.abs(f_b['obj']-f_a['obj'])
         k = k + 1
         if f_p['obj'] <= f_q['obj']:
@@ -187,16 +223,14 @@ def gold_search(n,c,S_train,r_mu,train_data,p_low,p_bar):
             f_p['obj'] = f_q['obj']
             q=a+t*(b-a)
             f_q = dro_models.det_release_time_scheduling_wass_affine_given_ka(n,c,S_train,r_mu,train_data,p_low,p_bar,q)
-                
+        print('----------------------------------------------------------')
         print('golden search node:','a:',a,'p:',p,'q:',q,'b:',b)
         print('golden search obj:','f_a:',f_a['obj'],'f_p:',f_p['obj'],'f_q:',f_q['obj'],'f_b:',f_b['obj'])
 
     if f_p['obj'] <= f_q['obj']:
-        opt_price = p
-        opt_obj = f_p['obj']
+        f_p['ka'] = p
     else:
-        opt_price = q
-        opt_obj = f_q['obj']
+        f_q['ka'] = q
 
 
-    return opt_obj,opt_price
+    return f_q

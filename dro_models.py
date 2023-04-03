@@ -523,12 +523,22 @@ def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar,x_saa):
         model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
-    for i in range(N):
-        for j in range(N):
-            x[i,j].start = x_saa[i,j]
+    # for i in range(N):
+    #     for j in range(N):
+    #         x[i,j].start = x_saa[i,j]
 
+    # model.NumStart = 2
+    # # iterate over all MIP starts
+    # for s in range(model.NumStart):
+    #     # set StartNumber
+    #     model.params.StartNumber = s
 
-    model.setParam('OutputFlag', 1)
+    #     # now set MIP start values using the Start attribute, e.g.:
+    #     for i in range(N):
+    #         for j in range(N):
+    #             x[i,j].start = x_saa[i,j]
+
+    model.setParam('OutputFlag', 0)
     model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
@@ -568,7 +578,8 @@ def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,k
     t0 = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't0')
     t1 = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't1')
     x = model.addVars(N,N,vtype = GRB.BINARY,name = 'x')
-    model.setObjective(c*ka + (1/M)*quicksum(theta),GRB.MINIMIZE)
+    # model.setObjective(c*ka + (1/M)*quicksum(theta),GRB.MINIMIZE)
+    model.setObjective((1/M)*quicksum(theta),GRB.MINIMIZE)
 
     bet = {}
     up = {}
@@ -583,7 +594,6 @@ def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,k
         bet[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'bet')
         up[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0,name = 'up')
         vp[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = 0,name = 'sp')
-
 
         model.addConstr(theta[m] >= quicksum(t0) + quicksum([-bet[m][j]*p_hat[j,m] for j in range(N)])\
             + quicksum([up[m][j]*p_low[j] + vp[m][j]*p_bar[j] for j in range(N) ]))
@@ -615,13 +625,11 @@ def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,k
                 for j in range(N):
                     model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == x[i-1,j] + t1[i-1,j]-t1[i,j])  
 
-
-
     for i in range(N):
         model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
-    model.setParam('OutputFlag', 1)
+    model.setParam('OutputFlag', 0)
     model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)

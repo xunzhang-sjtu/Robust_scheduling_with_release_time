@@ -148,7 +148,7 @@ def variableNeighborhoodDescent(N,r,c,M,p_hat,d_bar,solution,model_mosek,models,
 
         else:
             i += 1
-        # print('iteration=',it,'obj:',curr_opt_obj,' seq:',solution)
+        print('iteration=',it,'obj:',curr_opt_obj,' seq:',solution)
 
     sol = {}
     sol['obj'] = curr_opt_obj
