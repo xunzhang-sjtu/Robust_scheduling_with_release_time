@@ -18,7 +18,7 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-time_limits = 1800
+time_limits = 600
 mip_gap = 0.01
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
@@ -95,14 +95,8 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
     ka = model.addVar(vtype = GRB.CONTINUOUS,lb = 0,name = 'ka')
     theta = model.addVars(M,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'theta')
     lbd = model.addVars(M,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'lbd')
-    # lbd = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'lbd')
-
     y = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'y')
-
     x = model.addVars(N,N,vtype = GRB.BINARY,name = 'x')
-    # x = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0, name = 'x')
-
-
 
     model.setObjective(c*ka + (1/M)*quicksum(theta),GRB.MINIMIZE)
 
@@ -139,7 +133,7 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
 
 
 
-    M_val = N + 0.0001
+    M_val = 2*N + 0.0001
     for i in range(N):
         for j in range(N):
             model.addConstr(y[i,j] <= ka)
@@ -284,7 +278,7 @@ def det_release_time_scheduling_wass_given_ka(N,r,c,M,p_hat,d_bar,ka):
 
     return sol
 
-def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar,d_low):
+def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar):
 
 
     model = gp.Model('wass')
@@ -330,7 +324,7 @@ def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar,d_low):
                     model.addConstr(v[m][i,j] >= -quicksum([(x[i,q] - x[i-1,q]) * r[q] * (j-i) for q in range(N)]) \
                         + quicksum([(j-i+1)*x[i-1,q]*p_hat[q,m] for q in range(N)]) ) 
 
-    M_val = N+1
+    M_val = 2*N+1
     for i in range(N):
         for j in range(N):
             model.addConstr(y[i,j] <= ka)
@@ -342,7 +336,7 @@ def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar,d_low):
         model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
 
     model.setParam('OutputFlag', 0)
-    # model.setParam('MIPGap',0.05)
+    model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
 
@@ -352,7 +346,7 @@ def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar,d_low):
     model.optimize()    
     end_time = time.time()
     cpu_time = end_time - start_time
-    if model.status == 2 or model.status == 13:
+    if model.status == 2 or model.status == 13 or model.status == 9:
         obj_val = model.getObjective().getValue()
         x_tem = np.zeros((N,N))
         for i in range(N):
@@ -538,7 +532,7 @@ def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar,x_saa):
     #         for j in range(N):
     #             x[i,j].start = x_saa[i,j]
 
-    model.setParam('OutputFlag', 0)
+    model.setParam('OutputFlag', 1)
     model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
     # model.setParam('ConcurrentMIP',6)
@@ -571,7 +565,7 @@ def det_release_time_scheduling_wass_affine(N,c,M,r,p_hat,p_low,p_bar,x_saa):
     return sol
 
 # --- det affine given ka -----
-def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,ka):
+def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,ka,x_start):
 
     model = gp.Model('affine')
     theta = model.addVars(M,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'theta')
@@ -632,7 +626,10 @@ def det_release_time_scheduling_wass_affine_given_ka(N,c,M,r,p_hat,p_low,p_bar,k
     model.setParam('OutputFlag', 0)
     model.setParam('MIPGap',mip_gap)
     model.setParam('TimeLimit',time_limits)
-    # model.setParam('ConcurrentMIP',6)
+    # # model.setParam('ConcurrentMIP',6)
+    # for i in range(N):
+    #     for j in range(N):
+    #         x[i,j].start = x_start[i,j]
 
     # model.write("E:\\onedrive\\dro.LP")
    

@@ -18,13 +18,14 @@ def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_mo
         c = c_set[i]
         if exact_model:
             # ===== exact model ======
-            sol = dro_models.det_release_time_scheduling_wass(n,r_mu,c_set[i],S_train,train_data,p_bar,p_low,x_saa)
+            # sol = dro_models.det_release_time_scheduling_wass(n,r_mu,1e-6,S_train,train_data,p_bar,p_low,x_saa)
+            sol = dro_models.det_release_time_scheduling_RS(n,r_mu,c_set[i],S_train,train_data,p_bar)
         else: 
             # ====== heuristic solving =======
             # sol = heuristic.vns(n,r_mu,c_set[i],S_train,train_data,p_bar,model_DRO,models_DRO,sol_saa)
             # sol = dro_models.det_release_time_scheduling_wass_affine(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
             # sol = gold_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
-            sol = bisection_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
+            sol = bisection_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
             sol['obj'] = sol['obj'] - r_mu.sum()
             print('-------------------------------------------')
             # print('Wass time = ',np.round(sol['time'],2),\
@@ -51,8 +52,8 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
     # c_set[0] = 0.000001
 
     # ******** wassertein RS **************
-    sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
-    c_set = range_c*sol_affine['obj']
+    # sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
+    c_set = range_c*(sol_saa['obj'] - sum(r_mu))
     # print('-------- Solve Wass DRO --------------------')        
     # solve dro model
     sol = solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_model,model_DRO,models_DRO)
@@ -145,7 +146,7 @@ def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_
     return sol
 
 
-def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar):
+def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar,x_saa):
     total_time = 0
     a = 1e-6
     b = n+1
@@ -159,7 +160,7 @@ def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar):
     iter = 0
     while b - a > 0.1 and abs(f_b['obj'] - f_a['obj']) >= 0.0001*tau and iter < max_iter:
         p = 0.5*(a+b)
-        f_p = dro_models.det_release_time_scheduling_wass_affine_given_ka(n,1,S_train,r_mu,train_data,p_low,p_bar,p)
+        f_p = dro_models.det_release_time_scheduling_wass_affine_given_ka(n,1,S_train,r_mu,train_data,p_low,p_bar,p,x_saa)
         total_time = total_time + f_p['time']
         if f_p['obj'] <= tau:
             f_b = f_p
@@ -172,8 +173,8 @@ def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar):
             sol = f_a
             sol['c'] = b
         iter = iter + 1
-        # print('-----------------------------------')
-        # print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
+        print('-----------------------------------')
+        print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
         sol['time'] = total_time
     return sol
 
