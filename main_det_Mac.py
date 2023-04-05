@@ -51,8 +51,7 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
         sol_det = det.deter(n,S_test,r_mu,p_mu_esti,test_data,full_path)
         sol_saa = saa.SAA(n,S_train,S_test,train_data,r_mu,test_data,full_path)
-        # sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
-    
+        sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
         exact_model = True
         sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
         
@@ -62,10 +61,11 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
 
 
 def effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path):
-    # # obtain a empty model
-    model_DRO = mosek_models.obtain_mosek_model(S_train,n)
-    models_DRO = [model_DRO.clone() for _ in range(n)] 
-
+    # # # obtain a empty model
+    # model_DRO = mosek_models.obtain_mosek_model(S_train,n)
+    # models_DRO = [model_DRO.clone() for _ in range(n)] 
+    model_DRO = 1
+    models_DRO = 1
     for delta_r in delta_r_all:
         file_path1 = file_path + 'delta_r='+str(delta_r) + '/'
         num_cores = int(mp.cpu_count())
@@ -79,7 +79,7 @@ def effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_
             std_p = np.sqrt(np.pi/2)*mad_p
             print('----------------------- delta_r:',delta_r,'-------------------------------------')
             # main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
-            rst.append(p.apply_async(main_process, args=(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path2,)))
+            rst.append(p.apply_async(main_process, args=(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path2,)))
         p.close()
         p.join()
 
@@ -167,21 +167,22 @@ instances = para['instances']
 range_c = para['range_c']
 if __name__ == '__main__':
     np.random.seed(12)
-    # impact of variance of processing time
-    n = 10
-    file_path = 'D:/DRO_scheduling/det_release/processing_variance_RS/'
-    delta_ep_all = np.arange(1.2,1.201,0.2)
-    para = parameters.get_para(para,'n',n,file_path)
-    para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
-
-    effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
-
-
-    # # impact of range of release time
+    # # impact of variance of processing time
     # n = 10
-    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/release_range/'
-    # delta_r_all = [0.05,0.1]
-    # effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
+    # file_path = 'D:/DRO_scheduling/det_release/processing_variance_RS/'
+    # delta_ep_all = np.arange(1.2,1.201,0.2)
+    # para = parameters.get_para(para,'n',n,file_path)
+    # para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
+    # effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
+
+
+    # impact of range of release time
+    n = 10
+    file_path = 'D:/DRO_scheduling/det_release/release_range_RS/'
+    delta_r_all = [0.05,0.1]
+    para = parameters.get_para(para,'n',n,file_path)
+    para = parameters.get_para(para,'delta_r_all',delta_r_all,file_path)
+    effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
 
 
     # # impact of number of jobs
