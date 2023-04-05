@@ -86,8 +86,6 @@ def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
 
     return obj_val,x_seq,cpu_time
 
-
-
 def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
 
 
@@ -183,7 +181,6 @@ def det_release_time_scheduling_wass(N,r,c,M,p_hat,d_bar,d_low,x_saa):
     sol['obj'] = obj_val
     sol['ka'] = ka.x
     return sol
-
 
 # ---------
 def det_release_time_scheduling_wass_given_ka(N,r,c,M,p_hat,d_bar,ka):
@@ -370,7 +367,6 @@ def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar):
 
     # print('kappa',ka.x)
     return sol
-
 
 # **********************************
 
