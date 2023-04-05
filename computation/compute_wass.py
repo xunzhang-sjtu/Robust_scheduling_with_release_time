@@ -173,8 +173,8 @@ def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar,x_saa):
             sol = f_a
             sol['c'] = b
         iter = iter + 1
-        print('-----------------------------------')
-        print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
+        # print('-----------------------------------')
+        # print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
         sol['time'] = total_time
     return sol
 
