@@ -89,24 +89,26 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
 
 
 def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_bar,p_low,r_low,r_bar,range_c,full_path,sol_saa):
-    # ******** wassertein dro **************
-    max_c = sol_saa['obj']
-    c_set = range_c*max_c
-    c_set[0] = 0.000001
-    # print('-------- Solve Wass DRO --------------------')        
-    # solve dro model
     S_train = len(train_data_r[0,:])
     S_test = len(test_data_r[0,:])
+
+    # # ******** wassertein dro **************
+    # c_set = range_c*sol_saa['obj']
+    # c_set[0] = 0.000001
+
+    # ******** wassertein RS **************
+    # sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
+    c_set = range_c*(sol_saa['obj'])
+    # print('-------- Solve Wass DRO --------------------')        
 
     rst_wass_list = {} 
     rst_wass_time = []
     rst_wass_obj = []
-
     no_sol_flag = 0
     for i in range(len(c_set)):
         c = c_set[i]
-        sol_wass = dro_models.rand_release_time_scheduling_wass_affine(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
-        # sol = dro_models.rand_release_time_scheduling_wass_affine_scenario(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
+        # sol_wass = dro_models.rand_release_time_scheduling_wass_affine_scenario(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
+        sol_wass = bisection_search_rand_release(n,c,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar)
         if np.isnan(sol_wass['obj']):
             no_sol_flag = 1
             break
@@ -115,9 +117,9 @@ def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_
             rst_wass_time.append(sol_wass['time'])
             rst_wass_list[c] = np.int32(np.round(sol_wass['x_seq'])+1) 
 
-        # print('Wass time = ',np.round(sol_wass['time'],2),\
-        #       ' c =',c,\
-        # ',obj =',np.round(sol_wass['obj'],2))
+        print('Wass time = ',np.round(sol_wass['time'],2),\
+              ' c =',sol_wass['c'],\
+            ',obj =',np.round(sol_wass['obj'],2))
 
     sol = {}
     sol['no_sol_flag'] = no_sol_flag
@@ -178,7 +180,37 @@ def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar,x_saa):
         sol['time'] = total_time
     return sol
 
+def bisection_search_rand_release(n,tau,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar):
+    total_time = 0
+    a = 1e-6
+    b = n+1
+    f_a = {}
+    f_a['obj'] = 1000000
+    f_b = {}
+    f_b['obj'] = 0
 
+    sol = {}
+    max_iter = 15
+    iter = 0
+    while b - a > 0.1 and abs(f_b['obj'] - f_a['obj']) >= 0.0001*tau and iter < max_iter:
+        p = 0.5*(a+b)
+        f_p = dro_models.rand_release_time_scheduling_RS_given_ka(n,S_train,train_data_r,train_data_p,p_low,p_bar,r_low,r_bar,p)
+        total_time = total_time + f_p['time']
+        if f_p['obj'] <= tau:
+            f_b = f_p
+            b = p
+            sol = f_b
+            sol['c'] = b
+        else:
+            a = p
+            f_a = f_p
+            sol = f_a
+            sol['c'] = b
+        iter = iter + 1
+        # print('-----------------------------------')
+        # print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
+        sol['time'] = total_time
+    return sol
 
 def gold_search(n,c,S_train,r_mu,train_data,p_low,p_bar):
 

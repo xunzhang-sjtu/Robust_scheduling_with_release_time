@@ -177,9 +177,9 @@ if __name__ == '__main__':
 
 
     # impact of range of release time
-    n = 10
+    n = 20
     file_path = 'D:/DRO_scheduling/det_release/release_range_RS/'
-    delta_r_all = [0.05,0.1]
+    delta_r_all = np.arange(0.05,0.501,0.05)
     para = parameters.get_para(para,'n',n,file_path)
     para = parameters.get_para(para,'delta_r_all',delta_r_all,file_path)
     effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)

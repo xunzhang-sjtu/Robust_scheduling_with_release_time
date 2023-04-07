@@ -889,6 +889,118 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
     vp = {}
     ur = {}
     vr = {}
+    wp = {}
+    sp = {}
+    wr = {}
+    sr = {}
+    phi_p = {}
+    phi_r = {}
+    pi_p = {}
+    pi_r = {}
+    for m in range(M):
+        phi[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'alp')
+        bet[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'bet')
+        up[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0,name = 'up')
+        ur[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'ur')
+        vp[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = 0,name = 'sp')
+        vr[m] = model.addVars(N,vtype = GRB.CONTINUOUS,lb = 0,name = 'sr')
+
+
+        model.addConstr(theta[m] >= quicksum(t0) + quicksum([-bet[m][j]*p_hat[j,m] - phi[m][j]*r_hat[j,m] for j in range(N)])\
+            + quicksum([up[m][j]*p_low[j] + vp[m][j]*p_bar[j] + ur[m][j]*r_low[j] + vr[m][j]*r_bar[j] for j in range(N) ]))
+
+        for j in range(N):
+            model.addConstr(bet[m][j]==up[m][j] + vp[m][j] - quicksum([t1[i,j] for i in range(N)]) - 1)
+            model.addConstr(phi[m][j]==ur[m][j] + vr[m][j] - quicksum([t2[i,j] for i in range(N)]))
+
+            model.addConstr(ka >= bet[m][j] )
+            model.addConstr(ka >= -bet[m][j])
+            model.addConstr(ka >= phi[m][j] )
+            model.addConstr(ka >= -phi[m][j])
+
+        wp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'wp')
+        wr[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'wr')
+        sp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'vp')
+        sr[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'vr')
+
+        phi_p[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'phi_p')
+        phi_r[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'phi_r')
+        pi_p[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'pi_p')
+        pi_r[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'pi_r')
+
+        for i in range(N):
+            model.addConstr(t0[i] >= quicksum([wr[m][i,j]*r_low[j] + sr[m][i,j]*r_bar[j] + wp[m][i,j]*p_low[j] + sp[m][i,j]*p_bar[j] for j in range(N)]))
+            for j in range(N):
+                model.addConstr(wr[m][i,j] + sr[m][i,j] == x[i,j] - t2[i,j])
+                model.addConstr(wp[m][i,j] + sp[m][i,j] == -t1[i,j])
+
+            if i == 0:
+                model.addConstr(t0[i] >= quicksum([phi_r[m][i,j]*r_low[j] + pi_r[m][i,j]*r_bar[j] + phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
+                for j in range(N):
+                    model.addConstr(phi_r[m][i,j] + pi_r[m][i,j] == -t2[i,j])
+                    model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == -t1[i,j])    
+
+            if i > 0:
+                model.addConstr(t0[i] - t0[i-1] >= quicksum([phi_r[m][i,j]*r_low[j] + pi_r[m][i,j]*r_bar[j] + phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
+                for j in range(N):
+                    model.addConstr(phi_r[m][i,j] + pi_r[m][i,j] == t2[i-1,j]-t2[i,j])
+                    model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == x[i-1,j] + t1[i-1,j]-t1[i,j])  
+
+    for i in range(N):
+        model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
+        model.addConstr(quicksum([x[j,i] for j in range(N)]) == 1)
+
+    model.setParam('OutputFlag', 1)
+    model.setParam('MIPGap',0.01)
+    model.setParam('TimeLimit',time_limits)
+    # model.setParam('ConcurrentMIP',6)
+
+    # model.write("E:\\onedrive\\dro.LP")
+   
+    start_time = time.time()
+    model.optimize()
+    end_time = time.time()
+    cpu_time = end_time - start_time   
+    if model.status == 2 or model.status == 13 or model.status == 9:
+        obj_val = model.getObjective().getValue()
+        x_tem = np.zeros((N,N))
+        for i in range(N):
+            for j in range(N):
+                x_tem[i,j] = x[i,j].x
+
+        x_seq = x_tem @ np.arange(N)
+
+    else:
+        obj_val = np.NAN
+        x_seq = np.ones(N)*np.NAN
+
+    sol = {}
+    sol['c'] = c
+    sol['obj'] = obj_val
+    sol['x_seq'] = x_seq
+    sol['time'] = cpu_time
+    return sol
+
+# rand release time affine RS
+def rand_release_time_scheduling_RS_given_ka(N,M,r_hat,p_hat,p_low,p_bar,r_low,r_bar,ka):
+    model = gp.Model('affine')
+    # ka = model.addVar(vtype = GRB.CONTINUOUS,lb = 0,name = 'ka')
+    theta = model.addVars(M,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 'theta')
+
+    t0 = model.addVars(N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't0')
+    t1 = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't1')
+    t2 = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,name = 't2')
+
+    x = model.addVars(N,N,vtype = GRB.BINARY,name = 'x')
+
+    model.setObjective((1/M)*quicksum(theta),GRB.MINIMIZE)
+
+    phi = {}
+    bet = {}
+    up = {}
+    vp = {}
+    ur = {}
+    vr = {}
 
     wp = {}
     sp = {}
@@ -921,9 +1033,6 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
             model.addConstr(ka >= phi[m][j] )
             model.addConstr(ka >= -phi[m][j])
 
-
-
-
         wp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'wp')
         wr[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = -GRB.INFINITY,ub = 0, name = 'wr')
         sp[m] = model.addVars(N,N,vtype = GRB.CONTINUOUS,lb = 0,name = 'vp')
@@ -939,8 +1048,6 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
             for j in range(N):
                 model.addConstr(wr[m][i,j] + sr[m][i,j] == x[i,j] - t2[i,j])
                 model.addConstr(wp[m][i,j] + sp[m][i,j] == -t1[i,j])
-
-
             if i == 0:
                 model.addConstr(t0[i] >= quicksum([phi_r[m][i,j]*r_low[j] + pi_r[m][i,j]*r_bar[j] + phi_p[m][i,j]*p_low[j] + pi_p[m][i,j]*p_bar[j] for j in range(N)]))
                 for j in range(N):
@@ -952,8 +1059,6 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
                 for j in range(N):
                     model.addConstr(phi_r[m][i,j] + pi_r[m][i,j] == t2[i-1,j]-t2[i,j])
                     model.addConstr(phi_p[m][i,j] + pi_p[m][i,j] == x[i-1,j] + t1[i-1,j]-t1[i,j])  
-
-
 
     for i in range(N):
         model.addConstr(quicksum([x[i,j] for j in range(N)]) == 1)
@@ -984,7 +1089,7 @@ def rand_release_time_scheduling_wass_affine(N,c,M,r_hat,p_hat,p_low,p_bar,r_low
         x_seq = np.ones(N)*np.NAN
 
     sol = {}
-    sol['c'] = c
+    sol['c'] = ka
     sol['obj'] = obj_val
     sol['x_seq'] = x_seq
     sol['time'] = cpu_time
