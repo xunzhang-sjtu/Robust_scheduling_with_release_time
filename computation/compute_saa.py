@@ -11,11 +11,13 @@ def SAA(n,S_train,S_test,train_data,r_mu,test_data,full_path):
     x_seq_saa,obj_val_saa,time_saa = saa.saa_seq_det_release(n,S_train,train_data,r_mu)
     tft_saa = out_sample.computeTotal_det_release(n,test_data,r_mu,S_test,x_seq_saa)
 
+    tft_saa_in_sample = out_sample.computeTotal_det_release(n,train_data,r_mu,S_train,x_seq_saa)
     sol = {}
     sol['obj'] = obj_val_saa
     sol['seq'] = x_seq_saa
     sol['time'] = time_saa
     sol['out_obj'] = tft_saa
+    sol['in_obj'] = tft_saa_in_sample
 
     print('SAA time = ',np.round(time_saa,2),\
           ',obj =',np.round(obj_val_saa,2),\

@@ -51,13 +51,12 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
         sol_det = det.deter(n,S_test,r_mu,p_mu_esti,test_data,full_path)
         sol_saa = saa.SAA(n,S_train,S_test,train_data,r_mu,test_data,full_path)
-        sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
-        exact_model = True
+        exact_model = False
         sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
-        
-        # exact_model = True
-        # sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
-        
+        if n <= 40:
+            exact_model = True
+            sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
+            sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
 
 
 def effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path):
@@ -95,37 +94,60 @@ def effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_pa
         model_DRO = 1
         models_DRO = 1
         file_path1 = file_path + 'n='+str(n) + '/'
+        num_cores = int(mp.cpu_count())
+        p = mp.Pool(num_cores)
+        rst = []
         for ins in range(instances):
-            # Seed = 10 + ins
-            # np.random.seed(Seed)
+            Seed = 10 + ins
+            np.random.seed(Seed)
+            # delta_r = np.random.uniform(0.05,0.3)
+            # delta_ep = np.random.uniform(0.2,2.0,n)
+            file_path2 = file_path1 + 'ins='+str(ins) + '/'
             mu_p = np.random.uniform(10*delta_mu,50,n)
             r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
             mad_p = np.random.uniform(0,delta_ep*mu_p)
             std_p = np.sqrt(np.pi/2)*mad_p
-            print('----------------------- delta_r:',delta_r,'-------------------------------------')
-            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,ins,file_path1)
+            print('----------------------- delta_r:',delta_r,' delta_ep:',np.round(delta_ep,2),'-------------------------------------')
+            # main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path2)
+            rst.append(p.apply_async(main_process, args=(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path2,)))
+        p.close()
+        p.join()
 
+        for sol in rst:
+            sol.get()
+
+            
 def exact_vs_appro(instances,iterations,delta_mu,N_all,S_train,file_path):
 
     for n in N_all:
         # obtain a empty model
         # model_DRO = mosek_models.obtain_mosek_model(S_train,n)
         # models_DRO = [model_DRO.clone() for _ in range(n)] 
+        file_path1 = file_path + 'n='+str(n) + '/'
+
         model_DRO = 1
         models_DRO = 1
-        
+        num_cores = int(mp.cpu_count())
+        # p = mp.Pool(num_cores)
+        # rst = []
         for ins in range(instances):
-            # delta_r = np.random.uniform(0.05,0.5)
-            # delta_ep = np.random.uniform(0,2)
-            delta_r = 0.05
-            delta_ep = 1.5
+            delta_r = np.random.uniform(0.05,0.3)
+            delta_ep = np.random.uniform(0.2,2)
+            # delta_r = 0.05
+            # delta_ep = 1.5
             mu_p = np.random.uniform(10*delta_mu,50,n)
             r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
             mad_p = np.random.uniform(0,delta_ep*mu_p)
             std_p = np.sqrt(np.pi/2)*mad_p
-            file_path1 = file_path + 'n='+str(n) + '/' + 'ins='+str(ins) + '/'
+            file_path2 = file_path1 + 'ins='+str(ins) + '/'
             print('----------------------- n:',n,' ins:',ins,'-------------------------------------')
-            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path1)
+            main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path2)
+        #     rst.append(p.apply_async(main_process, args=(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path2,)))
+        # p.close()
+        # p.join()
+
+        # for sol in rst:
+        #     sol.get()
 
 def effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path):
     # # obtain a empty model
@@ -166,7 +188,7 @@ iterations = para['iterations']
 instances = para['instances']
 range_c = para['range_c']
 if __name__ == '__main__':
-    np.random.seed(12)
+    np.random.seed(11)
     # # impact of variance of processing time
     # n = 10
     # file_path = 'D:/DRO_scheduling/det_release/processing_variance_RS/'
@@ -177,23 +199,23 @@ if __name__ == '__main__':
 
 
     # impact of range of release time
-    n = 20
-    file_path = 'D:/DRO_scheduling/det_release/release_range_RS/'
-    delta_r_all = np.arange(0.05,0.501,0.05)
-    para = parameters.get_para(para,'n',n,file_path)
-    para = parameters.get_para(para,'delta_r_all',delta_r_all,file_path)
-    effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
+    # n = 20
+    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/release_range_RS/'
+    # delta_r_all = np.arange(0.35,0.501,0.05)
+    # para = parameters.get_para(para,'n',n,file_path)
+    # para = parameters.get_para(para,'delta_r_all',delta_r_all,file_path)
+    # effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
 
 
-    # # impact of number of jobs
-    # N_all = [100]
-    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/num_jobs_test/'
-    # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
+    # impact of number of jobs
+    N_all = [10]
+    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/num_jobs_RS_with_MM_test/'
+    effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 
 
     # # compare of exact and approximation
-    # N_all = [80]
-    # file_path = 'D:/DRO_scheduling/det_release/exact_vs_appro_sample_test/'
+    # N_all = [30,40,50]
+    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/exact_vs_appro_sample_RS/'
     # exact_vs_appro(instances,iterations,delta_mu,N_all,S_train,file_path)
 
  

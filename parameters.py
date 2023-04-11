@@ -5,7 +5,7 @@ import pickle
 def set_para():
     para = {}
     para['delta_mu'] = 4 # control lb of mean processing time
-    para['delta_r'] = 0.1 # control ub of the release time
+    para['delta_r'] = 0.05 # control ub of the release time
     para['delta_ep'] = 2 # control the upper bound of the mad
     para['delta_er'] = 1 # control the upper bound of the mad
     para['S_train'] = 20

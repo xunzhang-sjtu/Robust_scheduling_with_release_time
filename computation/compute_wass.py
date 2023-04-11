@@ -19,12 +19,17 @@ def solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_mo
         if exact_model:
             # ===== exact model ======
             # sol = dro_models.det_release_time_scheduling_wass(n,r_mu,1e-6,S_train,train_data,p_bar,p_low,x_saa)
-            sol = dro_models.det_release_time_scheduling_RS(n,r_mu,c_set[i],S_train,train_data,p_bar)
+            sol = dro_models.det_release_time_scheduling_RS(n,r_mu,c-sum(r_mu),S_train,train_data,p_bar)
+            count = 0
+            if np.isnan(sol['obj']) and count <=10:
+                c = 1.0001*c
+                sol = dro_models.det_release_time_scheduling_RS(n,r_mu,c,S_train,train_data,p_bar)
+                count = count + 1
+
         else: 
             # ====== heuristic solving =======
             # sol = heuristic.vns(n,r_mu,c_set[i],S_train,train_data,p_bar,model_DRO,models_DRO,sol_saa)
             # sol = dro_models.det_release_time_scheduling_wass_affine(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
-            # sol = gold_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar)
             sol = bisection_search(n,c_set[i],S_train,r_mu,train_data,p_low,p_bar,x_saa)
             sol['obj'] = sol['obj'] - r_mu.sum()
             print('-------------------------------------------')
@@ -53,7 +58,8 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
 
     # ******** wassertein RS **************
     # sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
-    c_set = range_c*(sol_saa['obj'] - sum(r_mu))
+    # c_set = range_c*(sol_saa['obj'] - sum(r_mu))
+    c_set = [np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
     # print('-------- Solve Wass DRO --------------------')        
     # solve dro model
     sol = solve_dro_model(n,r_mu,c_set,S_train,train_data,p_bar,p_low,sol_saa,exact_model,model_DRO,models_DRO)
@@ -175,8 +181,7 @@ def bisection_search(n,tau,S_train,r_mu,train_data,p_low,p_bar,x_saa):
             sol = f_a
             sol['c'] = b
         iter = iter + 1
-        # print('-----------------------------------')
-        # print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
+        print('iter=',iter, 'ka = ',p,' obj = ',f_p['obj'],' tau = ',tau)
         sol['time'] = total_time
     return sol
 

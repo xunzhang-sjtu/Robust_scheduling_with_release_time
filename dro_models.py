@@ -18,7 +18,7 @@ from numpy import inf
 from rsome import dro
 from rsome import E
 import time
-time_limits = 600
+time_limits = 1800
 mip_gap = 0.01
 
 def det_release_time_scheduling_moments(N,mu,r,p_bar,p_low):
@@ -357,8 +357,8 @@ def det_release_time_scheduling_RS(N,r,tau,M,p_hat,d_bar):
         x_seq = x_tem @ np.arange(N)
 
     else:
-        obj_val = -1000
-        x_seq = np.arange(N)
+        obj_val = np.nan
+        x_seq = np.arange(N) * np.nan
     sol = {}
     sol['c'] = tau
     sol['time'] = cpu_time
