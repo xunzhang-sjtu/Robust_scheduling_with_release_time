@@ -208,7 +208,7 @@ if __name__ == '__main__':
 
 
     # impact of number of jobs
-    N_all = [10]
+    N_all = [10,20,30,40,50,60,70,80]
     file_path = '/Users/zhangxun/data/robust_scheduling/det_release/num_jobs_RS_with_MM_test/'
     effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 
