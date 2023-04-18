@@ -11,8 +11,8 @@ def set_para():
     para['S_train'] = 20
     para['S_test'] = 10000
     para['iterations'] = 1
-    para['instances'] = 20
-    para['range_c'] = np.insert(np.arange(0.06,0.30001,0.02),0,np.arange(0,0.06,0.01))
+    para['instances'] = 10
+    para['range_c'] = np.insert(np.arange(0.1,0.50001,0.05),0,np.arange(0,0.1,0.02))
     # para['range_c'] = np.arange(0,0.06,0.05)
     para['range_c'][0] = 1e-6
     para['range_c'] = para['range_c'] + 1
