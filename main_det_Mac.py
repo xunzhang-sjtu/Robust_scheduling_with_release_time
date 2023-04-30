@@ -56,7 +56,7 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         if n < 40:
             exact_model = True
             sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
-            # sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
+            sol_mom = mom.moments_DRO(n,S_test,p_mu_esti,r_mu,test_data,p_bar,p_low,full_path)
 
 
 def effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path):
@@ -107,7 +107,7 @@ def effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_pa
             delta_ep = np.random.uniform(0.2,2.0,n)
             file_path2 = file_path1 + 'ins='+str(ins) + '/'
             mu_p = np.random.uniform(10*delta_mu,50,n)
-            r_mu = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
+            r_mu = np.random.uniform(0.00001,delta_r*mu_p.sum(),n)
             mad_p = np.random.uniform(0,delta_ep*mu_p)
             std_p = np.sqrt(np.pi/2)*mad_p
             print('----------------------- delta_r:',delta_r,' delta_ep:',np.round(delta_ep,2),'-------------------------------------')
@@ -211,8 +211,8 @@ if __name__ == '__main__':
 
 
     # # impact of number of jobs
-    N_all = [10,20,30]
-    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/Exact_VS_Affine_random_coef_RS/'
+    N_all = [10,20,30,40,50,60,70,80]
+    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/Exact_VS_Affine_random_coef_RS_adjust/'
     para = parameters.get_para(para,'N_all',N_all,file_path)
     effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 

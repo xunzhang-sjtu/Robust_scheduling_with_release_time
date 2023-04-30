@@ -8,7 +8,7 @@ def set_para():
     para['delta_r'] = 0.05 # control ub of the release time
     para['delta_ep'] = 2 # control the upper bound of the mad
     para['delta_er'] = 1 # control the upper bound of the mad
-    para['S_train'] = 20
+    para['S_train'] = 10
     para['S_test'] = 10000
     para['iterations'] = 1
     para['instances'] = 10
