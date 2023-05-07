@@ -51,8 +51,8 @@ def main_process(r_mu,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DR
         # p_mad_esti = p_std_esti/np.sqrt(np.pi/2)
         sol_det = det.deter(n,S_test,r_mu,p_mu_esti,test_data,full_path)
         sol_saa = saa.SAA(n,S_train,S_test,train_data,r_mu,test_data,full_path)
-        exact_model = False
-        sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
+        # exact_model = False
+        # sol_wass_VNS = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
         if n < 40:
             exact_model = True
             sol_wass_exact = wass.wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c,full_path,model_DRO,models_DRO)
@@ -167,8 +167,9 @@ def effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_
         for ins in range(instances):
             file_path2 = file_path1 + 'ins='+str(ins) + '/'
             mu_p = np.random.uniform(10*delta_mu,50,n)
-            mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
-            mad_p = np.random.uniform(0,delta_ep*mu_p)
+            mu_r = np.random.uniform(0.00001,delta_r*mu_p.sum(),n)
+            # mad_p = np.random.uniform(0,delta_ep*mu_p)
+            mad_p = np.random.uniform(0,np.random.uniform(0.0001,delta_ep,n)*mu_p)
             std_p = np.sqrt(np.pi/2)*mad_p
             print('----------------------- delta_ep:',delta_ep,' ins,',ins,'-------------------------------------')
             rst.append(p.apply_async(main_process, args=(mu_r,mu_p,std_p,n,S_train,S_test,iterations,model_DRO,models_DRO,file_path2,)))
@@ -191,14 +192,16 @@ iterations = para['iterations']
 instances = para['instances']
 range_c = para['range_c']
 if __name__ == '__main__':
-    # np.random.seed(11)
+    np.random.seed(11)
     # # impact of variance of processing time
-    # n = 20
-    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/processing_variance_RS_large/'
-    # delta_ep_all = np.arange(0.2,2.01,0.2)
-    # para = parameters.get_para(para,'n',n,file_path)
-    # para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
-    # effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
+    n = 20
+    delta_r_all = [0.05,0.15,0.3]
+    for delta_r in delta_r_all:
+        file_path = '/Users/zhangxun/data/robust_scheduling/det_release/release_range_processing_var_RS/delta_r='+str(delta_r)+'/'
+        delta_ep_all = np.arange(0.5,2.0,0.5)
+        para = parameters.get_para(para,'n',n,file_path)
+        para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
+        effect_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,S_train,file_path)
 
 
     # impact of range of release time
@@ -210,11 +213,11 @@ if __name__ == '__main__':
     # effect_release_range(instances,iterations,n,delta_mu,delta_r_all,delta_ep,S_train,file_path)
 
 
-    # # impact of number of jobs
-    N_all = [10,20,30,40,50,60,70,80]
-    file_path = '/Users/zhangxun/data/robust_scheduling/det_release/Exact_VS_Affine_random_coef_RS_adjust/'
-    para = parameters.get_para(para,'N_all',N_all,file_path)
-    effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
+    # # # impact of number of jobs
+    # N_all = [10,20,30,40,50,60,70,80]
+    # file_path = '/Users/zhangxun/data/robust_scheduling/det_release/Exact_VS_Affine_random_coef_RS_adjust/'
+    # para = parameters.get_para(para,'N_all',N_all,file_path)
+    # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_ep,S_train,file_path)
 
 
     # # compare of exact and approximation

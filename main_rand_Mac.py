@@ -58,7 +58,7 @@ def effect_both_release_and_processing_variance(instances,iterations,n,delta_mu,
                 std_p = np.sqrt(np.pi/2)*mad_p
                 std_r = np.sqrt(np.pi/2)*mad_r
                 print('------------------- delta_er:',delta_er,' delta_ep:,',delta_ep,' ins,',ins,'-------------------------------------')
-                cov_bar = np.NaN
+                cov_bar = 0
                 # main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
                 rst.append(p.apply_async(main_process, args=(mu_r,std_r,mu_p,std_p,n,S_train,S_test,file_path2,cov_bar,)))
             p.close()
@@ -91,16 +91,19 @@ def effect_correlation(instances,iterations,delta_mu,n,delta_ep,delta_er,S_train
     for cov_bar in cov_bar_all:
         file_path1 = file_path + 'cov_bar='+str(cov_bar) + '/'
         for ins in range(instances):
+            file_path2 = file_path1 + 'ins='+str(ins) +'/'
             # Seed = 10 + ins
             # np.random.seed(Seed)
             mu_p = np.random.uniform(10*delta_mu,50,n)
-            mu_r = np.round(np.random.uniform(0,delta_r*mu_p.sum(),n))
-            mad_p = np.random.uniform(0,delta_ep*mu_p)
-            mad_r = np.random.uniform(0,delta_er*mu_r)
+            mu_r = np.random.uniform(0,delta_r*mu_p.sum(),n)
+            mad_p = np.random.uniform(0,np.random.uniform(0.0001,delta_ep,n)*mu_p)
+            mad_r = np.random.uniform(0,np.random.uniform(0.0001,delta_er,n)*mu_r)
+            # mad_p = np.random.uniform(0,delta_ep*mu_p)
+            # mad_r = np.random.uniform(0,delta_er*mu_r)
             std_p = np.sqrt(np.pi/2)*mad_p
             std_r = np.sqrt(np.pi/2)*mad_r
             print('----------------------- cov_bar:',cov_bar,' ins,',ins,'-------------------------------------')
-            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,iterations,ins,file_path1,cov_bar)
+            main_process(mu_r,std_r,mu_p,std_p,n,S_train,S_test,file_path2,cov_bar)
 
 
 
@@ -122,30 +125,35 @@ if __name__ == '__main__':
     SEED = 12
     np.random.seed(SEED)
 
-    # # # impact of range of release time
+    # # impact of range of release time
     # n = 20
-    # file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/release_processing_var/S='+str(S_train)+'/delta_r='+str(delta_r)+'/instance='+str(instances)+'SEED='+str(SEED)+'/'
-    # delta_er_all = np.arange(0.5,2.01,0.5)
-    # delta_ep_all = np.arange(0.5,2.01,0.5)
-    # para = parameters.get_para(para,'n',n,file_path)
-    # para = parameters.get_para(para,'delta_er_all',delta_er_all,file_path)
-    # para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
-    # effect_both_release_and_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,delta_er_all,S_train,file_path)
+    # delta_r_all = [0.05,0.15,0.3]
+    # for delta_r in delta_r_all:
+
+    #     file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/release_processing_var_adjusted/S='+str(S_train)+'/delta_r='+str(delta_r)+'/instance='+str(instances)+'SEED='+str(SEED)+'/'
+    #     delta_er_all = np.arange(0.5,2.01,0.5)
+    #     delta_ep_all = np.arange(0.5,2.01,0.5)
+    #     para = parameters.get_para(para,'n',n,file_path)
+    #     para = parameters.get_para(para,'delta_er_all',delta_er_all,file_path)
+    #     para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
+    #     effect_both_release_and_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,delta_er_all,S_train,file_path)
 
 
 
-    # impact of number of jobs
-    N_all = [10,20,30,40,50,60,70,80]
+    # # impact of number of jobs
+    # N_all = [10,20,30,40,50,60,70,80]
     
-    file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/num_jobs_adjusted_target/'
-    para = parameters.get_para(para,'N_all',N_all,file_path)
-    effect_num_jobs(instances,iterations,delta_mu,N_all,delta_r,delta_ep,delta_er,S_train,file_path)
+    # file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/num_jobs_adjusted_target/'
+    # para = parameters.get_para(para,'N_all',N_all,file_path)
+    # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_r,delta_ep,delta_er,S_train,file_path)
 
-    # # impact of correlation between release and processing time
-    # N = 10
-    # cov_bar_all = np.arange(0.2,0.8,0.2)
-    # file_path = 'D:/DRO_scheduling/rand_release/correlation/'
-    # effect_correlation(instances,iterations,delta_mu,N,delta_ep,delta_er,S_train,file_path,cov_bar_all)
+    # impact of correlation between release and processing time
+    N = 20    
+    file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/correlation/n='+str(N)+'with_nagative_new/'
+
+    cov_bar_all = np.asarray([-0.6,-0.4,-0.2,0,0.2,0.4,0.6])
+    para = parameters.get_para(para,'cov_bar_all',cov_bar_all,file_path)
+    effect_correlation(instances,iterations,delta_mu,N,delta_ep,delta_er,S_train,file_path,cov_bar_all)
 
  
 

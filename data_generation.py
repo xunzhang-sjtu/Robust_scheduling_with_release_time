@@ -59,39 +59,51 @@ def generate_LogNormal(r_mu,r_sigma,n,k,quan_low,quan_bar):
 
 
 
-def generate_correlated_Normal(mu_p,std_p,mu_r,std_r,cov_bar,data_size,quan_low,quan_bar):
-
+def generate_correlated_Normal(mu_p,std_p,mu_r,std_r,cov_bar,S_train,S_test,quan_low,quan_bar):
     N = len(mu_p)
-    mu = np.append(mu_p,mu_r)
-    std = np.append(std_p*std_p,std_r*std_r)
-    cov = np.diag(std)
+    def truncate_data(N,temp,_low,_bar):
+        for i in range(N):
+            tem = temp[i,:] 
+            tem[tem < _low[i]] = _low[i]
+            tem[tem > _bar[i]] = _bar[i]
+            temp[i,:] = tem
+        return temp
+    
+    p_bar = np.zeros(N)
+    p_low = np.zeros(N)
+    r_bar = np.zeros(N)
+    r_low = np.zeros(N)
+    train_data_p = np.zeros((N,S_train))
+    test_data_p = np.zeros((N,S_test))
+    train_data_r = np.zeros((N,S_train))
+    test_data_r = np.zeros((N,S_test))
     for i in range(N):
-        temp = cov_bar * std_p[i] * std_r[i]
-        cov[i,N+i] = temp
-        cov[N+i,i] = temp
+        cov_mat = np.zeros((2,2))
+        cov_mat[0,0] = std_p[i]*std_p[i]
+        cov_mat[1,1] = std_r[i]*std_r[i]
+        cov_mat[0,1] = cov_bar * std_p[i]*std_r[i]
+        cov_mat[1,0] = cov_bar * std_p[i]*std_r[i]
+        temp = np.random.multivariate_normal(np.asarray([mu_p[i],mu_r[i]]),cov_mat,S_train+S_test)
+
+        p_low[i] = max(np.quantile(temp[:,0],quan_low),0.00000001)
+        p_bar[i] = np.quantile(temp[:,0],quan_bar)
+        train_data_p[i,:] = temp[0:S_train,0]
+        test_data_p[i,:] = temp[S_train:S_train+S_test,0]
 
 
-    temp = np.random.multivariate_normal(mu,cov,data_size)
+        r_low[i] = max(np.quantile(temp[:,1],quan_low),0.00000001)
+        r_bar[i] = np.quantile(temp[:,1],quan_bar)
+        train_data_r[i,:] = temp[0:S_train,1]
+        test_data_r[i,:] = temp[S_train:S_train+S_test,1]
+
+    train_data_p = truncate_data(N,train_data_p,p_low,p_bar)
+    test_data_p = truncate_data(N,test_data_p,p_low,p_bar)
+    train_data_r = truncate_data(N,train_data_r,r_low,r_bar)
+    test_data_r = truncate_data(N,test_data_r,r_low,r_bar)
 
 
-    p_low = np.zeros(2*N)
-    p_bar = np.zeros(2*N)
-    for i in range(2*N):
-        p_low[i] = max(np.quantile(temp[:,i],quan_low),0.00000001)
-        p_bar[i] = np.quantile(temp[:,i],quan_bar)
-        
 
-    for i in range(2*N):
-        tem = temp[:,i] 
-        tem[tem < p_low[i]] = p_low[i]
-        tem[tem > p_bar[i]] = p_bar[i]
-        temp[:,i] = tem
-
-    data_info = {}
-    data_info['data'] = temp
-    data_info['bar'] = p_bar
-    data_info['low'] = p_low
-    return data_info
+    return p_bar,p_low,r_bar,r_low,train_data_p,test_data_p,train_data_r,test_data_r
 
 
 def obtain_data(n,mu_p,std_p,r_mu,std_r,cov_bar,S_train,S_test,full_path):
@@ -108,15 +120,17 @@ def obtain_data(n,mu_p,std_p,r_mu,std_r,cov_bar,S_train,S_test,full_path):
     else:
         # temp,p_bar,p_low = generate_LogNormal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
         if not np.isnan(cov_bar):
-            data_info = generate_correlated_Normal(mu_p,std_p,r_mu,std_r,cov_bar,S_train+S_test,0.1,0.9)
-            p_bar = data_info['bar'][0:N]
-            p_low = data_info['low'][0:N]
-            r_bar = data_info['bar'][N:2*N]
-            r_low = data_info['low'][N:2*N]
-            train_data_p = (data_info['data'][0:S_train,0:N]).T
-            test_data_p = (data_info['data'][S_train:S_train+S_test,0:N]).T
-            train_data_r = (data_info['data'][0:S_train,N:2*N]).T
-            test_data_r = (data_info['data'][S_train:S_train+S_test,N:2*N]).T
+            p_bar,p_low,r_bar,r_low,train_data_p,test_data_p,train_data_r,test_data_r = generate_correlated_Normal(mu_p,std_p,r_mu,std_r,cov_bar,S_train,S_test,0.1,0.9)
+            data_info = {}
+            data_info['p_bar'] = p_bar
+            data_info['p_low'] = p_low
+            data_info['r_bar'] = r_bar
+            data_info['r_low'] = r_low            
+            data_info['train_data_p'] = train_data_p
+            data_info['test_data_p'] = test_data_p
+            data_info['train_data_r'] = train_data_r
+            data_info['test_data_r'] = test_data_r
+
         else:
             data_info = generate_Normal(mu_p,std_p,n,S_train+S_test,0.1,0.9)
             temp = data_info['data']

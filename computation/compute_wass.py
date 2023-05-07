@@ -61,8 +61,7 @@ def wass_DRO(n,r_mu,train_data,test_data,p_bar,p_low,sol_saa,exact_model,range_c
     # ******** wassertein RS **************
     # sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
     c_set = range_c*(sol_saa['obj'])
-    # c_set = [3*np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
-    c_set = [t.ppf(0.95,S_train) * np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
+    # c_set = [t.ppf(0.95,S_train) * np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
 
     # print('-------- Solve Wass DRO --------------------')        
     # solve dro model
@@ -108,11 +107,9 @@ def wass_DRO_rand_release(n,train_data_r,train_data_p,test_data_r,test_data_p,p_
 
     # ******** wassertein RS **************
     # sol_affine = dro_models.det_release_time_scheduling_wass_affine(n,1e-6,S_train,r_mu,train_data,p_low,p_bar,np.eye(n))
-    # c_set = range_c*(sol_saa['obj'])
-    c_set = [t.ppf(0.95,S_train) * np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
-    # c_set = [chi2.ppf(0.05,S_train) * np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
-
-    print('------- alpha:', c_set[0]/sol_saa['obj'])
+    c_set = range_c*(sol_saa['obj'])
+    # c_set = [t.ppf(0.95,S_train) * np.std(sol_saa['in_obj'])/np.sqrt(S_train-1) + sol_saa['obj']]
+    # print('------- alpha:', c_set[0]/sol_saa['obj'])
     # print('-------- Solve Wass DRO --------------------')        
 
     rst_wass_list = {} 
