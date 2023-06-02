@@ -120,32 +120,33 @@ S_train = para['S_train']
 S_test = para['S_test']
 iterations = para['iterations']
 instances = para['instances']
+range_c = para['range_c']
 if __name__ == '__main__':
     SEED = 12
     np.random.seed(SEED)
 
-    # # impact of range of release time
-    # n = 20
-    # delta_r_all = [0.05,0.15,0.3]
-    # for delta_r in delta_r_all:
+    # impact of range of release time
+    n = 20
+    delta_r_all = [0.05,0.15]
+    for delta_r in delta_r_all:
 
-    #     file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/release_processing_var_adjusted/S='+str(S_train)+'/delta_r='+str(delta_r)+'/instance='+str(instances)+'SEED='+str(SEED)+'/'
-    #     delta_er_all = np.arange(0.5,2.01,0.5)
-    #     delta_ep_all = np.arange(0.5,2.01,0.5)
-    #     para = parameters.get_para(para,'n',n,file_path)
-    #     para = parameters.get_para(para,'delta_er_all',delta_er_all,file_path)
-    #     para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
-    #     effect_both_release_and_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,delta_er_all,S_train,file_path)
+        file_path = 'E:/robust_scheduling/SEED='+str(SEED)+'/delta_r='+str(delta_r)+'/'
+        delta_er_all = np.arange(0.5,2.0,0.5)
+        delta_ep_all = np.arange(0.5,2.0,0.5)
+        para = parameters.get_para(para,'n',n,file_path)
+        para = parameters.get_para(para,'delta_er_all',delta_er_all,file_path)
+        para = parameters.get_para(para,'delta_ep_all',delta_ep_all,file_path)
+        effect_both_release_and_processing_variance(instances,iterations,n,delta_mu,delta_r,delta_ep_all,delta_er_all,S_train,file_path)
 
 
 
-    # impact of number of jobs
-    N_all = [80]
-    file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/num_jobs_adjusted_target_1.08/'
-    para = parameters.get_para(para,'N_all',N_all,file_path)
-    para = parameters.get_para(para,'range_c',np.asarray([1.08]),file_path)
-    range_c = para['range_c']
-    effect_num_jobs(instances,iterations,delta_mu,N_all,delta_r,delta_ep,delta_er,S_train,file_path)
+    # # impact of number of jobs
+    # N_all = [80]
+    # file_path = '/Users/zhangxun/data/robust_scheduling/rand_release/num_jobs_adjusted_target_1.08/'
+    # para = parameters.get_para(para,'N_all',N_all,file_path)
+    # para = parameters.get_para(para,'range_c',np.asarray([1.08]),file_path)
+    # range_c = para['range_c']
+    # effect_num_jobs(instances,iterations,delta_mu,N_all,delta_r,delta_ep,delta_er,S_train,file_path)
 
     # # impact of correlation between release and processing time
     # N = 20    
